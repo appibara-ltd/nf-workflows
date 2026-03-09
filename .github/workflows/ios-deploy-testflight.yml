@@ -1,0 +1,132 @@
+name: iOS Deploy to TestFlight
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version"
+        required: false
+        type: string
+        default: "24"
+      package-manager:
+        description: "Package manager (npm, yarn)"
+        required: false
+        type: string
+        default: "npm"
+      working-directory:
+        description: "Working directory for the project"
+        required: false
+        type: string
+        default: "."
+      scheme:
+        description: "Xcode scheme name"
+        required: true
+        type: string
+      workspace-name:
+        description: "Xcode workspace name (without .xcworkspace extension)"
+        required: true
+        type: string
+      ruby-version:
+        description: "Ruby version for Fastlane"
+        required: false
+        type: string
+        default: "3.2"
+      xcode-path:
+        description: "Xcode app path (e.g. /Applications/Xcode_26.2.app)"
+        required: false
+        type: string
+        default: "/Applications/Xcode_26.2.app"
+      create-github-release:
+        description: "Whether to create a GitHub release"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      APP_IDENTIFIER:
+        required: true
+      APPLE_DEVELOPER_PORTAL_TEAM_ID:
+        required: true
+      APPLE_STORE_CONNECT_TEAM_ID:
+        required: true
+      APPLE_KEY:
+        required: true
+      APPLE_KEY_ID:
+        required: true
+      APPLE_ISSUER_ID:
+        required: true
+      MATCH_REPO_URL:
+        required: true
+      MATCH_REPO_USERNAME:
+        required: true
+      MATCH_PASSWORD:
+        required: true
+      MATCH_REPO_BRANCH:
+        required: true
+      MATCH_REPO_PRIVATE_KEY:
+        required: true
+
+jobs:
+  deploy-testflight:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      APP_IDENTIFIER: ${{ secrets.APP_IDENTIFIER }}
+      APPLE_DEVELOPER_PORTAL_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_PORTAL_TEAM_ID }}
+      APPLE_STORE_CONNECT_TEAM_ID: ${{ secrets.APPLE_STORE_CONNECT_TEAM_ID }}
+      APPLE_KEY: ${{ secrets.APPLE_KEY }}
+      APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+      APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+      MATCH_REPO_URL: ${{ secrets.MATCH_REPO_URL }}
+      MATCH_REPO_USERNAME: ${{ secrets.MATCH_REPO_USERNAME }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
+      MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
+      SCHEME: ${{ inputs.scheme }}
+      WORKSPACE_NAME: ${{ inputs.workspace-name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s ${{ inputs.xcode-path }}
+
+      - name: Setup Ruby ${{ inputs.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ inputs.ruby-version }}
+          bundler-cache: true
+          working-directory: ${{ inputs.working-directory }}/ios
+
+      - name: Setup Node.js ${{ inputs.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+
+      - name: Install JS dependencies (yarn)
+        if: inputs.package-manager == 'yarn'
+        run: yarn install --frozen-lockfile
+
+      - name: Install JS dependencies (npm)
+        if: inputs.package-manager == 'npm'
+        run: npm ci
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.working-directory }}/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles(format('{0}/ios/Podfile.lock', inputs.working-directory)) }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Install CocoaPods
+        working-directory: ${{ inputs.working-directory }}/ios
+        run: bundle exec pod install
+
+      - name: Run Fastlane internal
+        working-directory: ${{ inputs.working-directory }}/ios
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bundle exec fastlane internal

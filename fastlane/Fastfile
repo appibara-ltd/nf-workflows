@@ -1,0 +1,320 @@
+# frozen_string_literal: true
+
+opt_out_usage
+
+require_relative "utils/config_helper"
+require_relative "utils/file_helper"
+require_relative "utils/github_helper"
+
+PLATFORM                = :ios
+PWD_DIRNAME             = File.dirname(Dir.pwd)
+DEFAULT_ARCHIVE_PATH    = "#{PWD_DIRNAME}/githubactions/#{PLATFORM}/archive/Archive.xcarchive"
+DEFAULT_OUTPUT_DIR      = "#{PWD_DIRNAME}/githubactions/#{PLATFORM}/output/"
+DEFAULT_EXPORT_METHOD   = "app-store"
+
+default_platform(PLATFORM)
+$setup_result = nil
+
+platform PLATFORM do
+  desc "Push a new build to TestFlight"
+
+  before_all do |lane|
+    pre_script = ENV.fetch("BEFORE_ALL") do
+      UI.message("NO Before All Script")
+      nil
+    end
+
+    sh(pre_script) if pre_script
+  end
+
+  lane :setup do |options|
+    next $setup_result unless $setup_result.nil?
+
+    config = ConfigHelper.app_config(export_method: options[:export_method])
+
+    setup_ci if ENV['CI']
+    clear_derived_data
+
+    FileHelper.decode_base64_to_file(
+      config[:match_git_private_key_base64],
+      config[:match_git_private_key_path]
+    )
+
+    FileHelper.decode_base64_to_file(
+      config[:firebase_credentials_base64],
+      config[:firebase_credentials_path]
+    )
+
+    api_key = app_store_connect_api_key(
+      key_id: config[:key_id],
+      issuer_id: config[:issuer_id],
+      is_key_content_base64: true,
+      key_content: config[:key_base64],
+      in_house: config[:in_house]
+    )
+
+    # Read all native targets from the Xcode project
+    xc_project = Xcodeproj::Project.open("../#{config[:project]}")
+    target_identifier_map = xc_project.native_targets.map do |target|
+      bundle_id = target.build_configurations.first.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
+      { name: target.name, bundle_id: bundle_id }
+    end
+
+    match(
+      type: config[:match_type],
+      app_identifier: target_identifier_map.map { |t| t[:bundle_id] },
+      username: config[:match_username],
+      clone_branch_directly: true,
+      storage_mode: "git",
+      git_url: config[:match_git_url],
+      git_branch: config[:match_git_branch],
+      api_key: api_key,
+      readonly: is_ci,
+      git_private_key: config[:match_git_private_key_path]
+    )
+
+    match_type = config[:match_type]
+    cert_name  = ENV["sigh_#{config[:app_identifier]}_#{match_type}_certificate-name"]
+
+    targets = target_identifier_map.map do |target|
+      bid = target[:bundle_id]
+      {
+        name: target[:name],
+        bundle_id: bid,
+        profile_uuid: ENV["sigh_#{bid}_#{match_type}"],
+        profile_name: ENV["sigh_#{bid}_#{match_type}_profile-name"],
+        profile_path: ENV["sigh_#{bid}_#{match_type}_profile-path"],
+        cert_name: cert_name
+      }
+    end
+
+    $setup_result = {
+      config: config,
+      api_key: api_key,
+      targets: targets,
+      cert_name: cert_name
+    }
+  end
+
+  lane :internal do
+    export_method = DEFAULT_EXPORT_METHOD
+    result    = setup(export_method: export_method)
+    config    = result[:config]
+    api_key   = result[:api_key]
+
+    latest_testflight_build_number(
+      api_key: api_key,
+      app_identifier: config[:app_identifier],
+      initial_build_number: 0
+    )
+
+    build_number = lane_context[:LATEST_TESTFLIGHT_BUILD_NUMBER] + 1
+    increment_build_number(
+      xcodeproj: config[:project],
+      skip_info_plist: false,
+      build_number: build_number
+    )
+
+    archive_result = create_archive(export_method: export_method)
+
+    ipa_result = create_ipa(
+      export_method: export_method,
+      archive_path: archive_result[:archive_path],
+      output_directory: archive_result[:output_directory]
+    )
+
+    resign_ipa(
+      export_method: export_method,
+      ipa_path: ipa_result[:path]
+    )
+
+    github_release_asset = "#{PWD_DIRNAME}/githubactions/temp/#{config[:scheme]}.zip"
+    FileHelper.zip_folder(
+      input_dir_path: "#{PWD_DIRNAME}/githubactions/#{PLATFORM}",
+      output_path: github_release_asset
+    )
+    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{github_release_asset}") } if ENV['GITHUB_ENV']
+
+    release_notes = GithubHelper.release_notes
+    github_release = GithubHelper.create_release(
+      version: ipa_result[:version],
+      build_number: ipa_result[:build_number],
+      release_notes: release_notes,
+      upload_assets: [github_release_asset]
+    )
+
+    puts "release_notes: #{release_notes}"
+    puts "github_release: #{github_release}"
+
+    upload_to_testflight(
+      changelog: "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}",
+      ipa: ipa_result[:path],
+      api_key: api_key,
+      app_identifier: config[:app_identifier],
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+
+    clean_build_artifacts
+  end
+
+  lane :adhoc do
+    export_method = "ad-hoc"
+    result  = setup(export_method: export_method)
+    config  = result[:config]
+
+    latest_release = firebase_app_distribution_get_latest_release(
+      googleservice_info_plist_path: config[:googleservice_info_plist_path],
+      service_credentials_file: config[:firebase_credentials_path]
+    )
+
+    build_number = (latest_release&.[](:buildVersion).to_i || 0) + 1
+    increment_build_number(
+      xcodeproj: config[:project],
+      skip_info_plist: false,
+      build_number: build_number
+    )
+
+    archive_result = create_archive(export_method: export_method)
+
+    ipa_result = create_ipa(
+      export_method: export_method,
+      archive_path: archive_result[:archive_path],
+      output_directory: archive_result[:output_directory]
+    )
+
+    resign_ipa(
+      export_method: export_method,
+      ipa_path: ipa_result[:path]
+    )
+
+    github_release_asset = "#{PWD_DIRNAME}/githubactions/temp/#{config[:scheme]}.zip"
+    FileHelper.zip_folder(
+      input_dir_path: "#{PWD_DIRNAME}/githubactions/#{PLATFORM}",
+      output_path: github_release_asset
+    )
+    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{github_release_asset}") } if ENV['GITHUB_ENV']
+
+    release_notes = GithubHelper.release_notes
+    github_release = GithubHelper.create_release(
+      version: ipa_result[:version],
+      build_number: ipa_result[:build_number],
+      release_notes: release_notes,
+      upload_assets: [github_release_asset]
+    )
+
+    firebase_app_distribution(
+      service_credentials_file: config[:firebase_credentials_path],
+      groups: "internal",
+      release_notes: "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}",
+      ipa_path: ipa_result[:path]
+    )
+
+    clean_build_artifacts
+  end
+
+  lane :create_archive do |options|
+    result         = setup(export_method: options[:export_method] || DEFAULT_EXPORT_METHOD)
+    targets        = result[:targets]
+    config         = result[:config]
+    cert_name      = result[:cert_name]
+    archive_path   = options[:archive_path] || DEFAULT_ARCHIVE_PATH
+    output_dir     = options[:output_directory] || DEFAULT_OUTPUT_DIR
+
+    app_target   = targets.find { |t| t[:bundle_id] == config[:app_identifier] }
+    version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
+    build_number = get_build_number(xcodeproj: config[:project])
+
+    targets.each do |target|
+      update_project_provisioning(
+        xcodeproj: config[:project],
+        profile: target[:profile_path],
+        target_filter: target[:name],
+        code_signing_identity: target[:cert_name]
+      )
+    end
+
+    # Archive
+    build_app(
+      workspace: config[:workspace],
+      scheme: config[:scheme],
+      silent: false,
+      configuration: config[:configuration],
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      archive_path: archive_path,
+      output_directory: output_dir,
+      skip_profile_detection: true,
+      codesigning_identity: cert_name,
+      export_team_id: config[:team_id],
+      skip_build_archive: false,
+      skip_codesigning: true,
+      skip_package_ipa: true,
+      export_options: {
+        method: config[:export_method],
+        compile_bitcode: true,
+        provisioningProfiles: targets.each_with_object({}) { |t, h| h[t[:bundle_id]] = t[:profile_uuid] }
+      }
+    )
+
+    {
+      version: version,
+      build_number: build_number,
+      archive_path: archive_path,
+      output_directory: output_dir
+    }
+  end
+
+  lane :create_ipa do |options|
+    result       = setup(export_method: options[:export_method] || DEFAULT_EXPORT_METHOD)
+    targets      = result[:targets]
+    config       = result[:config]
+    cert_name    = result[:cert_name]
+    archive_path = options[:archive_path] || DEFAULT_ARCHIVE_PATH
+    output_dir   = options[:output_directory] || DEFAULT_OUTPUT_DIR
+
+    app_target   = targets.find { |t| t[:bundle_id] == config[:app_identifier] }
+    version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
+    build_number = get_build_number(xcodeproj: config[:project])
+
+    # Create IPA
+    build_app(
+      workspace: config[:workspace],
+      scheme: config[:scheme],
+      silent: false,
+      configuration: config[:configuration],
+      output_name: config[:scheme],
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      archive_path: archive_path,
+      output_directory: output_dir,
+      skip_profile_detection: true,
+      codesigning_identity: cert_name,
+      export_team_id: config[:team_id],
+      skip_build_archive: true,
+      skip_codesigning: false,
+      skip_package_ipa: false,
+      export_options: {
+        method: config[:export_method],
+        compile_bitcode: true,
+        provisioningProfiles: targets.each_with_object({}) { |t, h| h[t[:bundle_id]] = t[:profile_uuid] }
+      }
+    )
+
+    {
+      version: version,
+      build_number: build_number,
+      path: lane_context[SharedValues::IPA_OUTPUT_PATH]
+    }
+  end
+
+  lane :resign_ipa do |options|
+    result    = setup(export_method: options[:export_method] || DEFAULT_EXPORT_METHOD)
+    targets   = result[:targets]
+    cert_name = result[:cert_name]
+
+    resign(
+      ipa: options[:ipa_path],
+      signing_identity: cert_name,
+      provisioning_profile: targets.each_with_object({}) { |t, h| h[t[:bundle_id]] = t[:profile_path] }
+    )
+  end
+end

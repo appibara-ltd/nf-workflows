@@ -1,0 +1,134 @@
+name: Android Deploy to Firebase App Distribution
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version"
+        required: false
+        type: string
+        default: "24"
+      package-manager:
+        description: "Package manager (npm, yarn)"
+        required: false
+        type: string
+        default: "npm"
+      working-directory:
+        description: "Working directory for the project"
+        required: false
+        type: string
+        default: "."
+      java-version:
+        description: "Java version"
+        required: false
+        type: string
+        default: "17"
+      java-distribution:
+        description: "Java distribution"
+        required: false
+        type: string
+        default: "zulu"
+      firebase-app-id:
+        description: "Firebase App ID for Android"
+        required: true
+        type: string
+      firebase-groups:
+        description: "Firebase tester groups"
+        required: false
+        type: string
+        default: "internal"
+      ruby-version:
+        description: "Ruby version for Fastlane"
+        required: false
+        type: string
+        default: "3.2"
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      FIREBASE_CREDENTIALS:
+        description: "Firebase service account credentials (base64 encoded)"
+        required: true
+
+jobs:
+  deploy-firebase:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ inputs.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.java-distribution }}
+          cache: gradle
+
+      - name: Setup Ruby ${{ inputs.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ inputs.ruby-version }}
+          bundler-cache: true
+          working-directory: ${{ inputs.working-directory }}/android
+
+      - name: Setup Node.js ${{ inputs.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.package-manager }}
+
+      - name: Install JS dependencies (yarn)
+        if: inputs.package-manager == 'yarn'
+        run: yarn install --frozen-lockfile
+
+      - name: Install JS dependencies (npm)
+        if: inputs.package-manager == 'npm'
+        run: npm ci
+
+      - name: Decode keystore
+        working-directory: ${{ inputs.working-directory }}/android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/release.keystore
+
+      - name: Decode Firebase credentials
+        working-directory: ${{ inputs.working-directory }}/android
+        run: |
+          echo "${{ secrets.FIREBASE_CREDENTIALS }}" | base64 --decode > firebase-credentials.json
+
+      - name: Build APK
+        working-directory: ${{ inputs.working-directory }}/android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease \
+            -PRELEASE_STORE_FILE=release.keystore \
+            -PRELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD \
+            -PRELEASE_KEY_ALIAS=$KEY_ALIAS \
+            -PRELEASE_KEY_PASSWORD=$KEY_PASSWORD
+
+      - name: Upload to Firebase App Distribution
+        working-directory: ${{ inputs.working-directory }}/android
+        run: |
+          bundle exec fastlane run firebase_app_distribution \
+            app:"${{ inputs.firebase-app-id }}" \
+            apk_path:"app/build/outputs/apk/release/app-release.apk" \
+            groups:"${{ inputs.firebase-groups }}" \
+            service_credentials_file:"firebase-credentials.json"
+
+      - name: Cleanup credentials
+        if: always()
+        working-directory: ${{ inputs.working-directory }}/android
+        run: |
+          rm -f app/release.keystore
+          rm -f firebase-credentials.json
