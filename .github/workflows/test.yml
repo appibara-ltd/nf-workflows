@@ -39,8 +39,3 @@ jobs:
 
       - name: Install Node Modules
         run: npm ci
-
-      - name: Decode Match 
-        run: |
-          echo "${{ secrets.MATCH_REPO_PRIVATE_KEY_BASE64 }}" | base64 --decode > file.txt
-          cat file.txt
