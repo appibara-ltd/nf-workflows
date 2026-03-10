@@ -10,7 +10,7 @@ on:
         default: "."
 
 jobs:
-  setup:
+  npm-install:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,3 +39,27 @@ jobs:
 
       - name: Install Node Modules
         run: npm ci
+
+  bundle-install:
+    needs: npm-install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+
+      - name: Cache vendor/bundle
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Bundle Install
+        run: bundle install
