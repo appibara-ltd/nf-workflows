@@ -28,7 +28,14 @@ nf_workflows/
 
 ### Workflow'ları Çağırma
 
-Bu repo'daki reusable workflow'ları kendi projenizden `workflow_call` ile çağırabilirsiniz:
+Bu repo'daki reusable workflow'ları kendi projenizden `workflow_call` ile çağırabilirsiniz.
+
+`secrets: inherit` kullanarak secret'ları her job'da tek tek tanımlamak yerine otomatik aktarabilirsiniz. Secret'lar şu kaynaktan inherit edilir:
+
+1. **GitHub Repo Settings** → `Settings` → `Secrets and variables` → `Actions` → `Repository secrets`
+2. **GitHub Organization Settings** → `Settings` → `Secrets and variables` → `Actions` (org seviyesinde tanımlanan secret'lar tüm repo'lara aktarılabilir)
+
+Gerekli secret'ların tam listesi için aşağıdaki [Gerekli Secrets](#-gerekli-secrets) bölümüne bakınız.
 
 ```yaml
 # .github/workflows/deploy-ios.yml
@@ -44,18 +51,7 @@ jobs:
     with:
       scheme: "MyApp"
       workspace-name: "MyApp"
-    secrets:
-      APP_IDENTIFIER: ${{ secrets.APP_IDENTIFIER }}
-      APPLE_DEVELOPER_PORTAL_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_PORTAL_TEAM_ID }}
-      APPLE_STORE_CONNECT_TEAM_ID: ${{ secrets.APPLE_STORE_CONNECT_TEAM_ID }}
-      APPLE_KEY: ${{ secrets.APPLE_KEY }}
-      APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
-      APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
-      MATCH_REPO_URL: ${{ secrets.MATCH_REPO_URL }}
-      MATCH_REPO_USERNAME: ${{ secrets.MATCH_REPO_USERNAME }}
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
-      MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
+    secrets: inherit
 ```
 
 ### Android Build Örneği
@@ -74,11 +70,52 @@ jobs:
     with:
       build-type: "apk"
       build-variant: "release"
-    secrets:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    secrets: inherit
+```
+
+### iOS Full Pipeline Örneği (Archive → Release → TestFlight)
+
+Aşağıdaki örnekte 3 workflow birbirine bağlı şekilde sırasıyla çalışır. `secrets: inherit` sayesinde secret'lar bir kere repo'da tanımlanır, her job'a otomatik aktarılır:
+
+```yaml
+# .github/workflows/ios-full-pipeline.yml
+name: iOS Full Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # 1. iOS Archive oluştur
+  build:
+    uses: appibara/nf_workflows/.github/workflows/ios-build.yml@main
+    with:
+      scheme: "MyApp"
+      workspace-name: "MyApp"
+      export-method: "app-store"
+      fastlane-lane: "create_archive"
+      upload-artifact: true
+      artifact-name: "ios-archive"
+    secrets: inherit
+
+  # 2. GitHub Release oluştur (build tamamlandıktan sonra)
+  release:
+    needs: build
+    uses: appibara/nf_workflows/.github/workflows/create-github-release.yml@main
+    with:
+      tag-name: "v${{ needs.build.outputs.version }}_${{ needs.build.outputs.build-number }}"
+      release-name: "v${{ needs.build.outputs.version }} (${{ needs.build.outputs.build-number }})"
+      artifact-name: "ios-archive"
+      generate-release-notes: true
+
+  # 3. TestFlight'a deploy et (release oluşturulduktan sonra)
+  deploy:
+    needs: [build, release]
+    uses: appibara/nf_workflows/.github/workflows/ios-deploy-testflight.yml@main
+    with:
+      scheme: "MyApp"
+      workspace-name: "MyApp"
+    secrets: inherit
 ```
 
 ## 🔧 Workflow Listesi
@@ -89,7 +126,6 @@ Node.js ortamı kurulumu. Caching desteği ve opsiyonel CocoaPods kurulumu.
 | Input | Varsayılan | Açıklama |
 |-------|-----------|----------|
 | `node-version` | `24` | Node.js versiyonu |
-| `package-manager` | `npm` | Paket yöneticisi (npm/yarn) |
 | `cache-pods` | `false` | CocoaPods cache |
 | `install-pods` | `false` | CocoaPods kurulumu |
 

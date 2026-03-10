@@ -8,11 +8,6 @@ on:
         required: false
         type: string
         default: "24"
-      package-manager:
-        description: "Package manager (npm, yarn)"
-        required: false
-        type: string
-        default: "npm"
       working-directory:
         description: "Working directory for the project"
         required: false
@@ -132,14 +127,9 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ inputs.node-version }}
-          cache: ${{ inputs.package-manager }}
+          cache: npm
 
-      - name: Install JS dependencies (yarn)
-        if: inputs.package-manager == 'yarn'
-        run: yarn install --frozen-lockfile
-
-      - name: Install JS dependencies (npm)
-        if: inputs.package-manager == 'npm'
+      - name: Install JS dependencies
         run: npm ci
 
       - name: Cache CocoaPods
