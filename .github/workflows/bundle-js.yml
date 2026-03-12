@@ -88,13 +88,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-base
+      - uses: appibara-ltd/nf-workflows/.github/actions/setup-base@main
         with:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
 
       - name: Install mise
         uses: jdx/mise-action@v3
+        with:
+          tool_versions: |
+            node 24
 
       - name: Install Node Modules
         run: npm ci
