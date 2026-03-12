@@ -49,12 +49,15 @@ on:
         default: true
         type: boolean
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   iOS:
     runs-on: ubuntu-latest
     if: inputs.build_ios
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: appibara-ltd/nf-workflows/.github/actions/setup-base@main
         with:
@@ -76,7 +79,7 @@ jobs:
       - name: Create JS Bundle
         run: npm run app archive -- --platform=ios
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.bundle_id }}_ios
           path: build/${{ inputs.bundle_id }}_ios.zip
@@ -86,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.build_android
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: appibara-ltd/nf-workflows/.github/actions/setup-base@main
         with:
@@ -108,7 +111,7 @@ jobs:
       - name: Create JS Bundle
         run: npm run app archive -- --platform=android
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.bundle_id }}_android
           path: build/${{ inputs.bundle_id }}_android.zip
