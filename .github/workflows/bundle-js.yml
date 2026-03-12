@@ -1,0 +1,112 @@
+name: Create Bundle
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "Working directory for the project"
+        required: false
+        type: string
+        default: "."
+      sdk_version:
+        description: "Nativeflow sdk version"
+        default: "0.0.1"
+        type: string
+      sdk_location:
+        description: "Nativeflow sdk location to download"
+        default: "nativeflow.app"
+        type: string
+      name:
+        description: "name of your application"
+        default: "NativeFlow Application"
+        type: string
+      version:
+        description: "Semver version"
+        default: "1.0.0"
+        type: string
+      bundle_id:
+        description: "Unique bundle id of your app"
+        default: "app.nativeflow.base"
+        type: string
+      bundle_version:
+        description: "Bundle version of your app"
+        default: "1"
+        type: string
+      owner:
+        description: "Application owner"
+        default: "NativeFlow"
+        type: string
+      xcode_version:
+        description: "Xcode version"
+        default: "/Applications/Xcode_26.2.app"
+        type: string
+      build_ios:
+        description: "Build iOS"
+        default: true
+        type: boolean
+      build_android:
+        description: "Build Android"
+        default: true
+        type: boolean
+
+jobs:
+  iOS:
+    runs-on: ubuntu-latest
+    if: inputs.build_ios
+    steps:
+      - name: Set Xcode version 
+        run: sudo xcode-select -s ${{ inputs.xcode_version }}
+
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-base
+        with:
+          sdk_version: ${{ inputs.sdk_version }}
+          sdk_location: ${{ inputs.sdk_location }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+
+      - name: Install Node Modules
+        run: npm ci
+
+      - name: Set App Info
+        run: npm run app set -- --name "${{ inputs.name }}" --market-version "${{ inputs.version }}" --bundle-id "${{ inputs.bundle_id }}" --bundle-version ${{ inputs.bundle_version }} --owner "${{ inputs.owner }}"
+
+      - name: Create JS Bundle
+        run: npm run app archive -- --platform=ios
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.bundle_id }}_ios
+          path: build/${{ inputs.bundle_id }}_ios.zip
+          retention-days: 90
+
+  Android:
+    runs-on: ubuntu-latest
+    if: inputs.build_android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-base
+        with:
+          sdk_version: ${{ inputs.sdk_version }}
+          sdk_location: ${{ inputs.sdk_location }}
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+
+      - name: Install Node Modules
+        run: npm ci
+
+      - name: Set App Info
+        run: npm run app set -- --name "${{ inputs.name }}" --market-version "${{ inputs.version }}" --bundle-id "${{ inputs.bundle_id }}" --bundle-version ${{ inputs.bundle_version }} --owner "${{ inputs.owner }}"
+
+      - name: Create JS Bundle
+        run: npm run app archive -- --platform=android
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.bundle_id }}_android
+          path: build/${{ inputs.bundle_id }}_android.zip
+          retention-days: 90

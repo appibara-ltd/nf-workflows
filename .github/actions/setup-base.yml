@@ -1,0 +1,35 @@
+name: 'Setup Base'
+description: 'Runs a sequence of steps'
+inputs:
+  sdk_version:
+    description: "Nativeflow sdk version"
+    default: "0.0.1"
+  sdk_location:
+    description: "Nativeflow sdk location to download"
+    default: "nativeflow.app"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cache SDK
+      uses: actions/cache@v4
+      id: base-sdk-cache
+      with:
+        path: base-${{ inputs.sdk_version }}.zip
+        key: base-sdk-v${{ inputs.sdk_version }}
+
+    - name: Install SDK
+      if: steps.base-sdk-cache.outputs.cache-hit != 'true'
+      run: wget "https://${{ inputs.sdk_location }}/sdk/base-${{ inputs.sdk_version }}.zip"
+
+    - name: Unzip SDK
+      run: unzip base-${{ inputs.sdk_version }}.zip -d ./base-sdk
+
+    - name: Extract SDK
+      run: |
+        shopt -s extglob
+        mv base-sdk/*!(.|..) ./
+        mv base-sdk/.*!(.|..) ./
+
+    - name: Move NF Files to sources
+      run: mv nf_files src/nf_files

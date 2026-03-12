@@ -20,7 +20,7 @@ jobs:
         run: echo "Step From Test Workflow"
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install mise
         uses: jdx/mise-action@v3
