@@ -20,16 +20,20 @@ runs:
 
     - name: Install SDK
       if: steps.base-sdk-cache.outputs.cache-hit != 'true'
+      shell: bash
       run: wget "https://${{ inputs.sdk_location }}/sdk/base-${{ inputs.sdk_version }}.zip"
 
     - name: Unzip SDK
+      shell: bash
       run: unzip base-${{ inputs.sdk_version }}.zip -d ./base-sdk
 
     - name: Extract SDK
+      shell: bash
       run: |
         shopt -s extglob
         mv base-sdk/*!(.|..) ./
         mv base-sdk/.*!(.|..) ./
 
     - name: Move NF Files to sources
+      shell: bash
       run: mv nf_files src/nf_files
