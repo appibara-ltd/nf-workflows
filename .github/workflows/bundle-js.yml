@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: appibara-ltd/nf-workflows/.github/setup-base@main
+      - uses: appibara-ltd/nf-workflows/.github/actions/setup-base@main
         with:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
