@@ -16,7 +16,7 @@ runs:
         repository: appibara-ltd/nf-workflows
         path: ./nf_workflows
 
-    - name: Move Fastfile
+    - name: Move Fastlane
       shell: bash
       run: |
         if [ -d "./fastlane" ]; then rm -rf ./fastlane; fi
@@ -25,3 +25,19 @@ runs:
     - name: Remove nf_workflows
       shell: bash
       run: rm -rf ./nf_workflows
+
+    - name: Move Bundle Config
+      shell: bash
+      run: |
+        if [ -d "./.bundle" ]; then rm -rf ./.bundle; fi
+        mv ./fastlane/.bundle ./.bundle
+        
+    - name: Move Gemfile
+      shell: bash
+      run: |
+        if [ -d "./Gemfile" ]; then rm -rf ./Gemfile; fi
+        if [ -d "./Gemfile.lock" ]; then rm -rf ./Gemfile.lock; fi
+        mv ./fastlane/Gemfile ./Gemfile
+        mv ./fastlane/Gemfile.lock ./Gemfile.lock
+
+
