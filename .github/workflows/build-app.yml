@@ -48,10 +48,54 @@ on:
         description: "Build Android"
         default: true
         type: boolean
+    secrets:
+      WORKSPACE_NAME: 
+        required: false
+      SCHEME: 
+        required: false
+      APPLE_DEVELOPER_PORTAL_TEAM_ID: 
+        required: true
+      APPLE_STORE_CONNECT_TEAM_ID: 
+        required: true
+      APPLE_KEY: 
+        required: true
+      APPLE_KEY_ID: 
+        required: true
+      APPLE_ISSUER_ID: 
+        required: true
+      MATCH_REPO_URL: 
+        required: true
+      MATCH_REPO_USERNAME: 
+        required: true
+      MATCH_PASSWORD: 
+        required: true
+      MATCH_REPO_BRANCH: 
+        required: true
+      MATCH_REPO_PRIVATE_KEY: 
+        required: true
+      BEFORE_ALL_COMMAND: 
+        required: false
+      GITHUB_TOKEN: 
+        required: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   FASTLANE_FASTFILE: ./fastlane/Fastfile
+  WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
+  SCHEME: ${{ secrets.SCHEME }}
+  APP_IDENTIFIER: ${{ inputs.bundle_id }}
+  APPLE_DEVELOPER_PORTAL_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_PORTAL_TEAM_ID }}
+  APPLE_STORE_CONNECT_TEAM_ID: ${{ secrets.APPLE_STORE_CONNECT_TEAM_ID }}
+  APPLE_KEY: ${{ secrets.APPLE_KEY }}
+  APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+  APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+  MATCH_REPO_URL: ${{ secrets.MATCH_REPO_URL }}
+  MATCH_REPO_USERNAME: ${{ secrets.MATCH_REPO_USERNAME }}
+  MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+  MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
+  MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
+  BEFORE_ALL: ${{ secrets.BEFORE_ALL_COMMAND }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
   contents: write  # This is the critical line for releases
@@ -61,22 +105,6 @@ jobs:
   iOS:
     runs-on: macos-26
     if: inputs.build_ios
-    env:
-      WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
-      SCHEME: ${{ secrets.SCHEME }}
-      APP_IDENTIFIER: ${{ inputs.bundle_id }}
-      APPLE_DEVELOPER_PORTAL_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_PORTAL_TEAM_ID }}
-      APPLE_STORE_CONNECT_TEAM_ID: ${{ secrets.APPLE_STORE_CONNECT_TEAM_ID }}
-      APPLE_KEY: ${{ secrets.APPLE_KEY }}
-      APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
-      APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
-      MATCH_REPO_URL: ${{ secrets.MATCH_REPO_URL }}
-      MATCH_REPO_USERNAME: ${{ secrets.MATCH_REPO_USERNAME }}
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
-      MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
-      BEFORE_ALL: ${{ secrets.BEFORE_ALL_COMMAND }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Set Xcode version 
         run: sudo xcode-select -s ${{ inputs.xcode_path }}
