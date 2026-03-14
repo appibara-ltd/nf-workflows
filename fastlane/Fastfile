@@ -27,7 +27,7 @@ platform :ios do
     setup_ci if ENV['CI']
     clear_derived_data
     match_type = config[:match_type]
-
+    puts "config: #{config}"
     FileHelper.decode_base64_to_file(
       config[:firebase_credentials_base64],
       config[:firebase_credentials_path]
