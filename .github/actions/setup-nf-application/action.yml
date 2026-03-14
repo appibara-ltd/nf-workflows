@@ -1,0 +1,39 @@
+name: Setup Nf Application
+description: Setup nf application
+inputs:
+  name:
+    description: "name of your application"
+    default: "NativeFlow Application"
+    type: string
+  version:
+    description: "Semver version"
+    default: "1.0.0"
+    type: string
+  bundle_id:
+    description: "Unique bundle id of your app"
+    default: "app.nativeflow.base"
+    type: string
+  bundle_version:
+    description: "Bundle version of your app"
+    default: "1"
+    type: string
+  owner:
+    description: "Application owner"
+    default: "NativeFlow"
+    type: string
+
+runs:
+  using: composite
+  steps:
+    # React Native related (NF CLI)
+    - name: Set App Info
+      shell: bash
+      run: npm run app set -- --name "${{ inputs.name }}" --market-version "${{ inputs.version }}" --bundle-id "${{ inputs.bundle_id }}" --bundle-version ${{ inputs.bundle_version }} --owner "${{ inputs.owner }}"
+    # React Native related (NF CLI)
+    - name: Set Splash
+      shell: bash
+      run: npm run app splash
+    # React Native related (NF CLI)
+    - name: Compile
+      shell: bash
+      run: npm run app compile
