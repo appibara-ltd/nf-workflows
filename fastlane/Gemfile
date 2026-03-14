@@ -25,3 +25,5 @@ gem 'pry'
 
 # Fastlane plugins
 gem 'fastlane-plugin-firebase_app_distribution'
+gem 'fastlane-plugin-increment_version_code'
+gem 'fastlane-plugin-versioning_android'

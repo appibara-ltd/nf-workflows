@@ -101,4 +101,42 @@ module ConfigHelper
       send_changelog_to_testflight: send_changelog_to_testflight
     }
   end
+
+  def self.android_config(export_method: "apk", platform: :android)
+    app_identifier  = require_env("APP_IDENTIFIER")
+
+    key_store_base64              = require_env("ANDROID_KEYSTORE")
+    key_store_password            = require_env("ANDROID_KEYSTORE_PASSWORD")
+    key_alias                     = require_env("ANDROID_KEY_ALIAS")
+    key_password                  = require_env("ANDROID_KEY_PASSWORD")
+    slack_url                     = optional_env("SLACK_URL")
+    firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
+    play_store_credentials_base64 = optional_env("PLAY_STORE_CREDENTIALS")
+
+    output_path                   = "lane_outputs"
+
+    root_dir_name = find_project_root(File.dirname(__FILE__))
+
+    {
+      slack_url: slack_url,
+      app_identifier: app_identifier,
+      export_method: export_method,
+      platform: platform,
+      task: export_method == "apk" ? "assemble" : "bundle",
+      build_type: "Release",
+      project_dir: "#{root_dir_name}/android",
+      gradle_path: "#{root_dir_name}/android/gradlew",
+      app_gradle_file_path: "#{root_dir_name}/android/app/build.gradle",
+      key_store_base64: key_store_base64,
+      key_store_path: "#{root_dir_name}/key.keystore",
+      key_store_password: key_store_password,
+      key_alias: key_alias,
+      key_password: key_password,
+      firebase_credentials_base64: firebase_credentials_base64,
+      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+      play_store_credentials_base64: play_store_credentials_base64,
+      play_store_credentials_path: "#{root_dir_name}/play_store_credentials.json",
+      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/#{export_method}.zip",
+    }
+  end
 end

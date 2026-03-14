@@ -11,6 +11,7 @@ XCODEBUILD_FORMATTER    = 'xcbeautify --renderer github-actions'
 
 default_platform(:ios)
 $setup_result = nil
+$setup_android_result = nil
 
 platform :ios do
   desc "Push a new build to TestFlight"
@@ -115,6 +116,7 @@ platform :ios do
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
+      platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -174,6 +176,7 @@ platform :ios do
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
+      platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -297,5 +300,108 @@ platform :ios do
       signing_identity: cert_name,
       provisioning_profile: targets.each_with_object({}) { |t, h| h[t[:bundle_id]] = t[:profile_path] }
     )
+  end
+end
+
+platform :android do
+  desc "Push a new build to Firebase App Distribution"
+
+  before_all do |lane|
+    pre_script = ConfigHelper.optional_env("BEFORE_ALL", default: nil)
+    sh(pre_script) if pre_script
+  end
+
+  lane :setup do |options|
+    next $setup_android_result unless $setup_android_result.nil?
+
+    config = ConfigHelper.android_config(export_method: options[:export_method], platform: :android)
+    setup_ci if ENV['CI']
+    clear_derived_data
+
+    FileHelper.decode_base64_to_file(
+      config[:firebase_credentials_base64],
+      config[:firebase_credentials_path]
+    )
+    FileHelper.decode_base64_to_file(
+      config[:key_store_base64],
+      config[:key_store_path]
+    )
+    FileHelper.decode_base64_to_file(
+      config[:play_store_credentials_base64],
+      config[:play_store_credentials_path]
+    )
+
+    $setup_android_result = {
+      config: config
+    }
+  end
+
+  lane :internal do |options|
+    result        = setup(export_method: options[:export_method] || "aab")
+    config        = result[:config]
+
+    version_codes = google_play_track_version_codes(
+      package_name: config[:app_identifier],
+      track: "internal",
+      json_key: config[:play_store_credentials_path]
+    )
+
+    latest_build_number = version_codes.empty? ? 0 : version_codes.first
+    new_build_number = latest_build_number + 1
+
+    increment_version_code(
+      gradle_file_path: config[:app_gradle_file_path],
+      version_code: new_build_number
+    )
+
+    gradle(
+      task: config[:task],
+      build_type: config[:build_type],
+      print_command: false,
+      project_dir: config[:project_dir],
+      gradle_path: config[:gradle_path],
+      properties: {
+        "android.injected.signing.store.file" => config[:key_store_path],
+        "android.injected.signing.store.password" => config[:key_store_password],
+        "android.injected.signing.key.alias" => config[:key_alias],
+        "android.injected.signing.key.password" => config[:key_password],
+        # "android.injected.version.code" => 100,
+        # "android.injected.version.name" => "1.0.0",
+      }
+    )
+
+    apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+    aab_path = lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
+
+    FileHelper.zip_folder(
+      input_dir_path: config[:export_method] == "apk" ? File.dirname(apk_path) : File.dirname(aab_path),
+      output_path: config[:zip_asset_path]
+    )
+    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
+
+    release_notes = GithubHelper.release_notes
+    version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
+
+    github_release = GithubHelper.create_release(
+      platform: :android,
+      version: version_name,
+      build_number: new_build_number,
+      release_notes: release_notes,
+      upload_assets: [config[:zip_asset_path]]
+    )
+
+    play_store_params = {
+      package_name: config[:app_identifier],
+      track: "internal",
+      json_key: config[:play_store_credentials_path]
+    }
+
+    if config[:export_method] == "apk"
+      play_store_params[:apk] = apk_path
+    else
+      play_store_params[:aab] = aab_path
+    end
+
+    upload_to_play_store(play_store_params)
   end
 end

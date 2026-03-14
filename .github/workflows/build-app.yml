@@ -77,6 +77,16 @@ on:
         required: false
       REPO_GITHUB_TOKEN: 
         required: false
+      PLAY_STORE_CREDENTIALS: 
+        required: false
+      ANDROID_KEYSTORE: 
+        required: false
+      ANDROID_KEYSTORE_PASSWORD: 
+        required: false
+      ANDROID_KEY_ALIAS: 
+        required: false
+      ANDROID_KEY_PASSWORD: 
+        required: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -96,6 +106,11 @@ env:
   MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
   BEFORE_ALL: ${{ secrets.BEFORE_ALL }}
   GITHUB_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+  PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
+  ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
 permissions:
   contents: write  # This is the critical line for releases
@@ -201,6 +216,11 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            ruby 3.4.8
+            nodejs 24
+            java zulu-17
 
       - name: Get npm cache directory
         id: npm-cache-dir
@@ -226,11 +246,12 @@ jobs:
           bundle_version: ${{ inputs.bundle_version }}
           owner: ${{ inputs.owner }}
 
-      - name: Create JS Bundle
-        run: npm run app archive -- --platform=android
+      - name: Build & Sign & Publish to Google Play Store
+        run: bundle exec fastlane android internal
 
-      - uses: actions/upload-artifact@v7
+      - name: Upload Artifacts
+        if: env.RELEASE_ASSET_PATH != ''
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.bundle_id }}_android
-          path: build/${{ inputs.bundle_id }}_android.zip
-          retention-days: 90
+          name: archive-apk
+          path: ${{ env.RELEASE_ASSET_PATH }}

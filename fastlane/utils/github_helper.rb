@@ -38,13 +38,13 @@ module GithubHelper
     data.map { |pr| "\n#{pr['title']} - ##{pr['number']} - @#{pr['user']['login']}" }.join
   end
 
-  def self.create_release(version: '0.0.1', build_number: 0, release_notes: '', upload_assets: [])
+  def self.create_release(platform: :ios, version: '0.0.1', build_number: 0, release_notes: '', upload_assets: [])
     Fastlane::Actions::SetGithubReleaseAction.run(
       server_url: GITHUB_API_BASE,
       repository_name: current_repo,
       api_bearer: ENV["GITHUB_TOKEN"],
-      name: "v#{version} (#{build_number})",
-      tag_name: "v#{version}_#{build_number}",
+      name: "#{platform == :ios ? '🍏' : '🤖'} v#{version} (#{build_number})",
+      tag_name: "#{platform == :ios ? '🍏' : '🤖'}-v#{version}_#{build_number}",
       description: release_notes,
       commitish: current_branch,
       upload_assets: upload_assets,
