@@ -53,6 +53,10 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   FASTLANE_FASTFILE: ./fastlane/Fastfile
 
+permissions:
+  contents: write  # This is the critical line for releases
+  pull-requests: read  # Required to list/read PRs for changelogs
+
 jobs:
   iOS:
     runs-on: macos-26

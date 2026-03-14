@@ -21,7 +21,11 @@ platform :ios do
       nil
     end
 
-    sh(pre_script) if pre_script
+    if pre_script.nil? || pre_script.strip.empty?
+      UI.message("NO Before All Script")
+    else
+      sh(pre_script)
+    end
   end
 
   lane :setup do |options|
