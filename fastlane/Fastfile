@@ -116,7 +116,6 @@ platform :ios do
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
-      platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -176,7 +175,6 @@ platform :ios do
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
-      platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -367,6 +365,7 @@ platform :android do
         "android.injected.signing.key.password" => config[:key_password],
         # "android.injected.version.code" => 100,
         # "android.injected.version.name" => "1.0.0",
+        "org.gradle.jvmargs" => "-Xmx4096m -XX:MaxMetaspaceSize=2048m",
       }
     )
 
@@ -383,7 +382,6 @@ platform :android do
     version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
 
     github_release = GithubHelper.create_release(
-      platform: :android,
       version: version_name,
       build_number: new_build_number,
       release_notes: release_notes,
@@ -393,6 +391,7 @@ platform :android do
     play_store_params = {
       package_name: config[:app_identifier],
       track: "internal",
+      release_status: "draft",
       json_key: config[:play_store_credentials_path]
     }
 
