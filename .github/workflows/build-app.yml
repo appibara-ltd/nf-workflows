@@ -17,7 +17,7 @@ on:
         default: "nativeflow.app"
         type: string
       name:
-        description: "name of your application"
+        description: "Name of your application"
         default: "NativeFlow Application"
         type: string
       version:
