@@ -313,8 +313,6 @@ platform :android do
     next $setup_android_result unless $setup_android_result.nil?
 
     config = ConfigHelper.android_config(export_method: options[:export_method], platform: :android)
-    setup_ci if ENV['CI']
-    clear_derived_data
 
     FileHelper.decode_base64_to_file(
       config[:firebase_credentials_base64],
@@ -382,6 +380,7 @@ platform :android do
     version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
 
     github_release = GithubHelper.create_release(
+      platform: :android,
       version: version_name,
       build_number: new_build_number,
       release_notes: release_notes,
