@@ -6,6 +6,10 @@ require 'fileutils'
 module FileHelper
   FILE_PERMISSION = 0400
 
+  def self.decode_base64(base64_content)
+    Base64.decode64(base64_content)
+  end
+
   # Decodes a base64 string and writes the result to a file
   def self.decode_base64_to_file(base64_content, file_path)
     if base64_content.nil? || file_path.nil?
@@ -14,7 +18,8 @@ module FileHelper
     end
 
     FileUtils.mkdir_p(File.dirname(file_path))
-    File.write(file_path, Base64.decode64(base64_content))
+    File.delete(file_path) if File.exist?(file_path)
+    File.write(file_path, decode_base64(base64_content))
     File.chmod(FILE_PERMISSION, file_path)
   end
 

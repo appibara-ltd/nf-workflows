@@ -1,0 +1,27 @@
+name: Setup Fastlane
+description: Setup fastlane
+inputs:
+  sdk_version:
+    description: "Nativeflow sdk version"
+    default: "0.0.1"
+  sdk_location:
+    description: "Nativeflow sdk location to download"
+    default: "nativeflow.app"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        repository: appibara-ltd/nf-workflows
+        path: ./nf_workflows
+
+    - name: Move Fastfile
+      shell: bash
+      run: |
+        if [ -d "./fastlane" ]; then rm -rf ./fastlane; fi
+        mv ./nf_workflows/fastlane ./fastlane
+
+    - name: Remove nf_workflows
+      shell: bash
+      run: rm -rf ./nf_workflows

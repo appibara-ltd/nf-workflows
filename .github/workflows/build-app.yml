@@ -1,4 +1,4 @@
-name: Create Bundle
+name: Build App
 
 on:
   workflow_call:
@@ -54,7 +54,7 @@ env:
 
 jobs:
   iOS:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     if: inputs.build_ios
     steps:
       - uses: actions/checkout@v6
@@ -63,6 +63,8 @@ jobs:
         with:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
+
+      - uses: appibara-ltd/nf-workflows/.github/actions/setup-fastlane@main
 
       - name: Install mise
         uses: jdx/mise-action@v4
@@ -92,6 +94,8 @@ jobs:
         with:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
+
+      - uses: appibara-ltd/nf-workflows/.github/actions/setup-fastlane@main
 
       - name: Install mise
         uses: jdx/mise-action@v4

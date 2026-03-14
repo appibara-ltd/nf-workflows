@@ -6,16 +6,13 @@ require_relative "utils/config_helper"
 require_relative "utils/file_helper"
 require_relative "utils/github_helper"
 
-PLATFORM                = :ios
-PWD_DIRNAME             = File.dirname(Dir.pwd)
-DEFAULT_ARCHIVE_PATH    = "#{PWD_DIRNAME}/githubactions/#{PLATFORM}/archive/Archive.xcarchive"
-DEFAULT_OUTPUT_DIR      = "#{PWD_DIRNAME}/githubactions/#{PLATFORM}/output/"
 DEFAULT_EXPORT_METHOD   = "app-store"
+XCODEBUILD_FORMATTER    = 'xcbeautify --renderer github-actions'
 
-default_platform(PLATFORM)
+default_platform(:ios)
 $setup_result = nil
 
-platform PLATFORM do
+platform :ios do
   desc "Push a new build to TestFlight"
 
   before_all do |lane|
@@ -30,20 +27,21 @@ platform PLATFORM do
   lane :setup do |options|
     next $setup_result unless $setup_result.nil?
 
-    config = ConfigHelper.app_config(export_method: options[:export_method])
-
+    config = ConfigHelper.app_config(export_method: options[:export_method], platform: :ios)
     setup_ci if ENV['CI']
     clear_derived_data
-
-    FileHelper.decode_base64_to_file(
-      config[:match_git_private_key_base64],
-      config[:match_git_private_key_path]
-    )
+    match_type = config[:match_type]
 
     FileHelper.decode_base64_to_file(
       config[:firebase_credentials_base64],
       config[:firebase_credentials_path]
     )
+
+    # Read all native targets from the Xcode project
+    target_identifier_map = Xcodeproj::Project.open(config[:project]).native_targets.map do |target|
+      bundle_id = target.build_configurations.first.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
+      { name: target.name, bundle_id: bundle_id }
+    end
 
     api_key = app_store_connect_api_key(
       key_id: config[:key_id],
@@ -53,15 +51,8 @@ platform PLATFORM do
       in_house: config[:in_house]
     )
 
-    # Read all native targets from the Xcode project
-    xc_project = Xcodeproj::Project.open("../#{config[:project]}")
-    target_identifier_map = xc_project.native_targets.map do |target|
-      bundle_id = target.build_configurations.first.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
-      { name: target.name, bundle_id: bundle_id }
-    end
-
     match(
-      type: config[:match_type],
+      type: match_type,
       app_identifier: target_identifier_map.map { |t| t[:bundle_id] },
       username: config[:match_username],
       clone_branch_directly: true,
@@ -70,12 +61,10 @@ platform PLATFORM do
       git_branch: config[:match_git_branch],
       api_key: api_key,
       readonly: is_ci,
-      git_private_key: config[:match_git_private_key_path]
+      git_private_key: FileHelper.decode_base64(config[:match_git_private_key_base64])
     )
 
-    match_type = config[:match_type]
-    cert_name  = ENV["sigh_#{config[:app_identifier]}_#{match_type}_certificate-name"]
-
+    cert_name = ENV["sigh_#{config[:app_identifier]}_#{match_type}_certificate-name"]
     targets = target_identifier_map.map do |target|
       bid = target[:bundle_id]
       {
@@ -98,9 +87,9 @@ platform PLATFORM do
 
   lane :internal do
     export_method = DEFAULT_EXPORT_METHOD
-    result    = setup(export_method: export_method)
-    config    = result[:config]
-    api_key   = result[:api_key]
+    result        = setup(export_method: export_method)
+    config        = result[:config]
+    api_key       = result[:api_key]
 
     latest_testflight_build_number(
       api_key: api_key,
@@ -119,41 +108,40 @@ platform PLATFORM do
 
     ipa_result = create_ipa(
       export_method: export_method,
-      archive_path: archive_result[:archive_path],
-      output_directory: archive_result[:output_directory]
+      archive_path: archive_result[:archive_path]
     )
 
-    resign_ipa(
-      export_method: export_method,
-      ipa_path: ipa_result[:path]
-    )
-
-    github_release_asset = "#{PWD_DIRNAME}/githubactions/temp/#{config[:scheme]}.zip"
     FileHelper.zip_folder(
-      input_dir_path: "#{PWD_DIRNAME}/githubactions/#{PLATFORM}",
-      output_path: github_release_asset
+      input_dir_path: config[:lane_output_directory],
+      output_path: config[:zip_asset_path]
     )
-    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{github_release_asset}") } if ENV['GITHUB_ENV']
+    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
-      upload_assets: [github_release_asset]
+      upload_assets: [config[:zip_asset_path]]
     )
 
-    puts "release_notes: #{release_notes}"
-    puts "github_release: #{github_release}"
-
-    upload_to_testflight(
-      changelog: "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}",
+    testflight_params = {
       ipa: ipa_result[:path],
       api_key: api_key,
       app_identifier: config[:app_identifier],
+      # If set to true, the distribute_external option won't work and no build will be distributed to testers. 
+      # (You might want to use this option if you are using this action on CI and have to pay for 'minutes used' on your CI plan).
+      # If set to true and a changelog is provided, it will partially wait for the build to appear on AppStore Connect
+      # so the changelog can be set, and skip the remaining processing steps
       skip_waiting_for_build_processing: true,
       distribute_external: false
-    )
+    }
+
+    if config[:send_changelog_to_testflight]
+      testflight_params[:changelog] = "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}"
+    end
+
+    upload_to_testflight(testflight_params)
 
     clean_build_artifacts
   end
@@ -179,28 +167,21 @@ platform PLATFORM do
 
     ipa_result = create_ipa(
       export_method: export_method,
-      archive_path: archive_result[:archive_path],
-      output_directory: archive_result[:output_directory]
+      archive_path: archive_result[:archive_path]
     )
 
-    resign_ipa(
-      export_method: export_method,
-      ipa_path: ipa_result[:path]
-    )
-
-    github_release_asset = "#{PWD_DIRNAME}/githubactions/temp/#{config[:scheme]}.zip"
     FileHelper.zip_folder(
-      input_dir_path: "#{PWD_DIRNAME}/githubactions/#{PLATFORM}",
-      output_path: github_release_asset
+      input_dir_path: config[:lane_output_directory],
+      output_path: config[:zip_asset_path]
     )
-    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{github_release_asset}") } if ENV['GITHUB_ENV']
+    File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes
     github_release = GithubHelper.create_release(
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
-      upload_assets: [github_release_asset]
+      upload_assets: [config[:zip_asset_path]]
     )
 
     firebase_app_distribution(
@@ -218,19 +199,22 @@ platform PLATFORM do
     targets        = result[:targets]
     config         = result[:config]
     cert_name      = result[:cert_name]
-    archive_path   = options[:archive_path] || DEFAULT_ARCHIVE_PATH
-    output_dir     = options[:output_directory] || DEFAULT_OUTPUT_DIR
+    archive_path   = options[:archive_path] || config[:xcarchive_path]
 
     app_target   = targets.find { |t| t[:bundle_id] == config[:app_identifier] }
     version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
     build_number = get_build_number(xcodeproj: config[:project])
 
     targets.each do |target|
-      update_project_provisioning(
-        xcodeproj: config[:project],
-        profile: target[:profile_path],
-        target_filter: target[:name],
-        code_signing_identity: target[:cert_name]
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        team_id: config[:team_id],
+        path: config[:project],
+        bundle_identifier: target[:bundle_id],
+        profile_name: target[:profile_name],
+        profile_uuid: target[:profile_uuid],
+        targets: target[:name],
+        code_sign_identity: target[:cert_name]
       )
     end
 
@@ -238,17 +222,17 @@ platform PLATFORM do
     build_app(
       workspace: config[:workspace],
       scheme: config[:scheme],
-      silent: false,
+      silent: config[:silent],
       configuration: config[:configuration],
-      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      xcodebuild_formatter: XCODEBUILD_FORMATTER,
       archive_path: archive_path,
-      output_directory: output_dir,
       skip_profile_detection: true,
       codesigning_identity: cert_name,
-      export_team_id: config[:team_id],
       skip_build_archive: false,
       skip_codesigning: true,
       skip_package_ipa: true,
+      export_method: config[:export_method],
+      export_team_id: config[:team_id],
       export_options: {
         method: config[:export_method],
         compile_bitcode: true,
@@ -259,8 +243,7 @@ platform PLATFORM do
     {
       version: version,
       build_number: build_number,
-      archive_path: archive_path,
-      output_directory: output_dir
+      archive_path: lane_context[SharedValues::XCODEBUILD_ARCHIVE],
     }
   end
 
@@ -269,29 +252,31 @@ platform PLATFORM do
     targets      = result[:targets]
     config       = result[:config]
     cert_name    = result[:cert_name]
-    archive_path = options[:archive_path] || DEFAULT_ARCHIVE_PATH
-    output_dir   = options[:output_directory] || DEFAULT_OUTPUT_DIR
+    archive_path = options[:archive_path] || config[:xcarchive_path]
+    output_dir   = options[:output_directory] || config[:ipa_output_directory]
 
-    app_target   = targets.find { |t| t[:bundle_id] == config[:app_identifier] }
-    version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
-    build_number = get_build_number(xcodeproj: config[:project])
+    archive_info = Plist.parse_xml("#{archive_path}/Info.plist")
+    app_props    = archive_info["ApplicationProperties"]
+    version      = app_props["CFBundleShortVersionString"]
+    build_number = app_props["CFBundleVersion"]
 
     # Create IPA
     build_app(
       workspace: config[:workspace],
       scheme: config[:scheme],
-      silent: false,
+      silent: config[:silent],
       configuration: config[:configuration],
       output_name: config[:scheme],
-      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      xcodebuild_formatter: XCODEBUILD_FORMATTER,
       archive_path: archive_path,
       output_directory: output_dir,
       skip_profile_detection: true,
       codesigning_identity: cert_name,
-      export_team_id: config[:team_id],
       skip_build_archive: true,
       skip_codesigning: false,
       skip_package_ipa: false,
+      export_method: config[:export_method],
+      export_team_id: config[:team_id],
       export_options: {
         method: config[:export_method],
         compile_bitcode: true,

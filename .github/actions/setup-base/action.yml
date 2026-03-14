@@ -9,7 +9,7 @@ inputs:
     default: "nativeflow.app"
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Cache SDK
       uses: actions/cache@v5

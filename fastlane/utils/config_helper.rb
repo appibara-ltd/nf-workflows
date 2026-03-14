@@ -19,7 +19,20 @@ module ConfigHelper
     end
   end
 
-  def self.app_config(export_method: "app-store")
+  # Walks up from a given directory to find the nearest package.json,
+  # returns the directory containing it (project root).
+  def self.find_project_root(start_dir)
+    dir = File.expand_path(start_dir)
+    loop do
+      return dir if File.exist?(File.join(dir, "package.json"))
+
+      parent = File.dirname(dir)
+      Fastlane::UI.user_error!("Could not find package.json in any parent directory of #{start_dir}") if parent == dir
+      dir = parent
+    end
+  end
+
+  def self.app_config(export_method: "app-store", platform: :ios)
     workspace_name  = optional_env("WORKSPACE_NAME", default: "nativeflowbase")
     scheme          = optional_env("SCHEME", default: "base")
 
@@ -39,8 +52,11 @@ module ConfigHelper
     slack_url                     = optional_env("SLACK_URL")
     firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
     googleservice_info_plist_path = optional_env("GOOGLESERVICE_INFO_PLIST_PATH")
+    silent                        = optional_env("SILENT", default: false)
+    send_changelog_to_testflight  = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
+    output_path                   = "lane_outputs"
 
-    pwd_dir_name = File.dirname(Dir.pwd)
+    root_dir_name = find_project_root(File.dirname(__FILE__))
 
     {
       configuration: "Release",
@@ -48,8 +64,12 @@ module ConfigHelper
       match_type: MATCH_TYPE_MAP[export_method] || export_method,
       in_house: false,
       workspace_name: workspace_name,
-      workspace: "#{workspace_name}.xcworkspace",
-      project: "#{workspace_name}.xcodeproj",
+      workspace: "#{root_dir_name}/ios/#{workspace_name}.xcworkspace",
+      project: "#{root_dir_name}/ios/#{workspace_name}.xcodeproj",
+      lane_output_directory: "#{root_dir_name}/#{output_path}/#{platform}",
+      xcarchive_path: "#{root_dir_name}/#{output_path}/#{platform}/archive/Archive.xcarchive",
+      ipa_output_directory: "#{root_dir_name}/#{output_path}/#{platform}/output/",
+      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/#{scheme}.zip",
       scheme: scheme,
       team_id: team_id,
       itc_team_id: itc_team_id,
@@ -63,10 +83,11 @@ module ConfigHelper
       match_password: match_password,
       match_git_branch: match_git_branch,
       match_git_private_key_base64: match_git_private_key_base64,
-      match_git_private_key_path: "#{pwd_dir_name}/fastlane_certs_match_cli_v2",
       firebase_credentials_base64: firebase_credentials_base64,
-      firebase_credentials_path: "#{pwd_dir_name}/firebase_credentials.json",
-      googleservice_info_plist_path: googleservice_info_plist_path
+      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+      googleservice_info_plist_path: googleservice_info_plist_path,
+      silent: silent,
+      send_changelog_to_testflight: send_changelog_to_testflight
     }
   end
 end
