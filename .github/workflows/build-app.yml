@@ -237,6 +237,17 @@ jobs:
       - name: Install Node Modules
         run: npm ci
 
+      - name: Cache vendor/bundle
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install Gems
+        run: bundle install
+
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main
         with:
