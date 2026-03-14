@@ -92,7 +92,7 @@ env:
   MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
   MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
   MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
-  BEFORE_ALL: ${{ secrets.BEFORE_ALL_COMMAND }}
+  BEFORE_ALL: ${{ secrets.BEFORE_ALL }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 permissions:
