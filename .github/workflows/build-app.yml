@@ -73,7 +73,7 @@ on:
         required: true
       MATCH_REPO_PRIVATE_KEY: 
         required: true
-      BEFORE_ALL_COMMAND: 
+      BEFORE_ALL: 
         required: false
 
 env:
