@@ -14,12 +14,20 @@ module ConfigHelper
   # Fetches an optional ENV variable, logs a warning and returns default if missing
   def self.optional_env(key, default: nil)
     result = ENV.fetch(key) { default }
-    if result.nil? || result.strip.empty?
+    
+    # Treat empty strings as missing and return default
+    if result.nil? || (result.is_a?(String) && result.strip.empty?)
       Fastlane::UI.message("#{key} is missing!") if default.nil?
       return default
-    else
-      result
     end
+    
+    # Safely convert string values "true" and "false" into actual Ruby booleans
+    if result.is_a?(String)
+      return true if result.strip.downcase == "true"
+      return false if result.strip.downcase == "false"
+    end
+    
+    result
   end
 
   # Walks up from a given directory to find the nearest package.json,
