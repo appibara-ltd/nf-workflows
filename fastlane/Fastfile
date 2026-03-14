@@ -16,16 +16,8 @@ platform :ios do
   desc "Push a new build to TestFlight"
 
   before_all do |lane|
-    pre_script = ENV.fetch("BEFORE_ALL") do
-      UI.message("NO Before All Script")
-      nil
-    end
-
-    if pre_script.nil? || pre_script.strip.empty?
-      UI.message("NO Before All Script")
-    else
-      sh(pre_script)
-    end
+    pre_script = ConfigHelper.optional_env("BEFORE_ALL", default: nil)
+    sh(pre_script) if pre_script
   end
 
   lane :setup do |options|

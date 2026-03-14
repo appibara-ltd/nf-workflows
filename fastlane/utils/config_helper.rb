@@ -13,9 +13,12 @@ module ConfigHelper
 
   # Fetches an optional ENV variable, logs a warning and returns default if missing
   def self.optional_env(key, default: nil)
-    ENV.fetch(key) do
+    result = ENV.fetch(key) { default }
+    if result.nil? || result.strip.empty?
       Fastlane::UI.message("#{key} is missing!") if default.nil?
-      default
+      return default
+    else
+      result
     end
   end
 
