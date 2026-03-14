@@ -75,8 +75,6 @@ on:
         required: true
       BEFORE_ALL_COMMAND: 
         required: false
-      GITHUB_TOKEN: 
-        required: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
