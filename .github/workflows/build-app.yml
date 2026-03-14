@@ -75,6 +75,8 @@ on:
         required: true
       BEFORE_ALL: 
         required: false
+      REPO_GITHUB_TOKEN: 
+        required: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -93,7 +95,7 @@ env:
   MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
   MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
   BEFORE_ALL: ${{ secrets.BEFORE_ALL }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
 
 permissions:
   contents: write  # This is the critical line for releases
