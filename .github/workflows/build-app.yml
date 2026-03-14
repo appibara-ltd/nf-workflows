@@ -57,6 +57,22 @@ jobs:
   iOS:
     runs-on: macos-26
     if: inputs.build_ios
+    env:
+      WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
+      SCHEME: ${{ secrets.SCHEME }}
+      APP_IDENTIFIER: ${{ inputs.bundle_id }}
+      APPLE_DEVELOPER_PORTAL_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_PORTAL_TEAM_ID }}
+      APPLE_STORE_CONNECT_TEAM_ID: ${{ secrets.APPLE_STORE_CONNECT_TEAM_ID }}
+      APPLE_KEY: ${{ secrets.APPLE_KEY }}
+      APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+      APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+      MATCH_REPO_URL: ${{ secrets.MATCH_REPO_URL }}
+      MATCH_REPO_USERNAME: ${{ secrets.MATCH_REPO_USERNAME }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_REPO_BRANCH: ${{ secrets.MATCH_REPO_BRANCH }}
+      MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
+      BEFORE_ALL: ${{ secrets.BEFORE_ALL_COMMAND }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Set Xcode version 
         run: sudo xcode-select -s ${{ inputs.xcode_path }}
@@ -74,6 +90,10 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            ruby 3.4.8
+            nodejs 24
 
       - name: Get npm cache directory
         id: npm-cache-dir
