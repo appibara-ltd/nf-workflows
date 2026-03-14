@@ -36,8 +36,8 @@ on:
         description: "Application owner"
         default: "NativeFlow"
         type: string
-      xcode_version:
-        description: "Xcode version"
+      xcode_path:
+        description: "Xcode path"
         default: "/Applications/Xcode_26.2.app"
         type: string
       build_ios:
@@ -59,7 +59,7 @@ jobs:
     if: inputs.build_ios
     steps:
       - name: Set Xcode version 
-        run: sudo xcode-select -s ${{ inputs.xcode_version }}
+        run: sudo xcode-select -s ${{ inputs.xcode_path }}
 
       - uses: actions/checkout@v6
 
