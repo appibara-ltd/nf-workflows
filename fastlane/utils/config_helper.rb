@@ -61,8 +61,9 @@ module ConfigHelper
     match_git_private_key_base64  = require_env("MATCH_REPO_PRIVATE_KEY")
     
     slack_url                     = optional_env("SLACK_URL")
+    firebase_app_id               = require_env("FIREBASE_APP_ID")
     firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
-    googleservice_info_plist_path = optional_env("GOOGLESERVICE_INFO_PLIST_PATH")
+    firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
     silent                        = optional_env("SILENT", default: false)
     send_changelog_to_testflight  = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
     output_path                   = "lane_outputs"
@@ -94,9 +95,10 @@ module ConfigHelper
       match_password: match_password,
       match_git_branch: match_git_branch,
       match_git_private_key_base64: match_git_private_key_base64,
+      firebase_app_id: firebase_app_id,
+      firebase_tester_group: firebase_tester_group,
       firebase_credentials_base64: firebase_credentials_base64,
       firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
-      googleservice_info_plist_path: googleservice_info_plist_path,
       silent: silent,
       send_changelog_to_testflight: send_changelog_to_testflight
     }
@@ -110,7 +112,9 @@ module ConfigHelper
     key_alias                     = require_env("ANDROID_KEY_ALIAS")
     key_password                  = require_env("ANDROID_KEY_PASSWORD")
     slack_url                     = optional_env("SLACK_URL")
+    firebase_app_id               = require_env("FIREBASE_APP_ID")
     firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
+    firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
     play_store_credentials_base64 = optional_env("PLAY_STORE_CREDENTIALS")
 
     output_path                   = "lane_outputs"
@@ -132,6 +136,8 @@ module ConfigHelper
       key_store_password: key_store_password,
       key_alias: key_alias,
       key_password: key_password,
+      firebase_app_id:firebase_app_id,
+      firebase_tester_group: firebase_tester_group,
       firebase_credentials_base64: firebase_credentials_base64,
       firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
       play_store_credentials_base64: play_store_credentials_base64,
