@@ -118,11 +118,12 @@ platform :ios do
       release_notes: release_notes,
       upload_assets: [config[:zip_asset_path]]
     )
-
+    release_notes_with_github = "#{release_notes.empty? ? '' : "#{release_notes}\n"}#{github_release.nil? ? '' : "Github Release(#{github_release["id"]}): #{github_release["html_url"]}"}"
     firebase_app_distribution(
+      app: config[:firebase_app_id],
       service_credentials_file: config[:firebase_credentials_path],
       groups: config[:firebase_tester_group],
-      release_notes: "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}",
+      release_notes: release_notes_with_github,
       ipa_path: ipa_result[:path]
     )
 
@@ -289,7 +290,7 @@ platform :android do
     release_notes = GithubHelper.release_notes
     version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
 
-    github_release = GithubHelper.create_release(
+    GithubHelper.create_release(
       platform: :android,
       version: version_name,
       build_number: new_build_number,
@@ -368,11 +369,13 @@ platform :android do
       upload_assets: [config[:zip_asset_path]]
     )
 
+    release_notes_with_github = "#{release_notes.empty? ? '' : "#{release_notes}\n"}#{github_release.nil? ? '' : "Github Release(#{github_release["id"]}): #{github_release["html_url"]}"}"
+
     firebase_app_distribution_params = {
       app: config[:firebase_app_id],
       service_credentials_file: config[:firebase_credentials_path],
       groups: config[:firebase_tester_group],
-      release_notes: "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}",
+      release_notes: release_notes_with_github,
     }
 
     if config[:export_method] == "apk"

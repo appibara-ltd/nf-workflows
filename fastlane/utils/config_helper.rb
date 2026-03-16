@@ -43,7 +43,7 @@ module ConfigHelper
     end
   end
 
-  def self.app_config(export_method: "app-store", platform: :ios)
+  def self.ios_config(export_method: "app-store", platform: :ios)
     workspace_name  = optional_env("WORKSPACE_NAME", default: "nativeflowbase")
     scheme          = optional_env("SCHEME", default: "base")
 
@@ -61,7 +61,7 @@ module ConfigHelper
     match_git_private_key_base64  = require_env("MATCH_REPO_PRIVATE_KEY")
     
     slack_url                     = optional_env("SLACK_URL")
-    firebase_app_id               = require_env("FIREBASE_APP_ID")
+    firebase_app_id               = require_env("FIREBASE_IOS_APP_ID")
     firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
     firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
     silent                        = optional_env("SILENT", default: false)
@@ -112,7 +112,7 @@ module ConfigHelper
     key_alias                     = require_env("ANDROID_KEY_ALIAS")
     key_password                  = require_env("ANDROID_KEY_PASSWORD")
     slack_url                     = optional_env("SLACK_URL")
-    firebase_app_id               = require_env("FIREBASE_APP_ID")
+    firebase_app_id               = require_env("FIREBASE_ANDROID_APP_ID")
     firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
     firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
     play_store_credentials_base64 = optional_env("PLAY_STORE_CREDENTIALS")

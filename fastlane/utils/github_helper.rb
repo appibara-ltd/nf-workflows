@@ -39,12 +39,16 @@ module GithubHelper
   end
 
   def self.create_release(platform: :ios, version: '0.0.1', build_number: 0, release_notes: '', upload_assets: [])
-    Fastlane::Actions::SetGithubReleaseAction.run(
+    tag_name = "#{platform == :ios ? '🍏' : '🤖'}-v#{version}_#{build_number}"
+    
+    # set_github_release does not throw an error if it fails (e.g. tag already exists)
+    # It just prints to the log and returns nil.
+    release_result = Fastlane::Actions::SetGithubReleaseAction.run(
       server_url: GITHUB_API_BASE,
       repository_name: current_repo,
       api_bearer: ENV["GITHUB_TOKEN"],
       name: "#{platform == :ios ? '🍏' : '🤖'} v#{version} (#{build_number})",
-      tag_name: "#{platform == :ios ? '🍏' : '🤖'}-v#{version}_#{build_number}",
+      tag_name: tag_name,
       description: release_notes,
       commitish: current_branch,
       upload_assets: upload_assets,
@@ -52,6 +56,44 @@ module GithubHelper
       is_prerelease: false,
       is_generate_release_notes: false,
     )
+
+    if release_result
+      # Release created successfully
+      return release_result
+    end
+
+    # If it reached here, release_result is nil (meaning it already existed or failed silently)
+    Fastlane::UI.important("Could not create GitHub release (it might already exist). Fetching existing release: #{tag_name}...")
+    download_release_assets(tag_name: tag_name, platform: platform)
+  end
+
+  # Fetches an existing release by tag and downloads its assets
+  def self.download_release_assets(tag_name:, platform:)
+    begin
+      encoded_tag_name = URI.encode_www_form_component(tag_name)
+      existing_release = github_get("/repos/#{current_repo}/releases/tags/#{encoded_tag_name}")
+      
+      # Download assets from the existing release
+      download_dir = File.expand_path("../../lane_outputs/tmp/#{platform}/release_assets", __dir__)
+      FileUtils.mkdir_p(download_dir)
+      
+      existing_release['assets']&.each do |asset|
+        download_path = File.join(download_dir, asset['name'])
+        Fastlane::UI.message("Downloading existing asset #{asset['name']} to #{download_path}")
+        
+        # We use curl with the token to download the asset
+        Fastlane::Actions.sh(
+          "curl -H 'Authorization: Bearer #{ENV['GITHUB_TOKEN']}' " \
+          "-H 'Accept: application/octet-stream' " \
+          "-L -o '#{download_path}' '#{asset['url']}'"
+        )
+      end
+      
+      # Return the parsed existing release so the lane can continue
+      return existing_release
+    rescue => fetch_ex
+      Fastlane::UI.user_error!("Failed to fetch existing release or download its assets: #{fetch_ex.message}")
+    end
   end
 
   # Performs authenticated GET request to GitHub API
