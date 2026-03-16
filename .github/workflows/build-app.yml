@@ -77,6 +77,10 @@ on:
         required: false
       REPO_GITHUB_TOKEN: 
         required: false
+      FIREBASE_IOS_APP_ID: 
+        required: false
+      FIREBASE_ANDROID_APP_ID: 
+        required: false
       PLAY_STORE_CREDENTIALS: 
         required: false
       ANDROID_KEYSTORE: 
@@ -106,6 +110,8 @@ env:
   MATCH_REPO_PRIVATE_KEY: ${{ secrets.MATCH_REPO_PRIVATE_KEY }}
   BEFORE_ALL: ${{ secrets.BEFORE_ALL }}
   GITHUB_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+  FIREBASE_IOS_APP_ID: ${{ secrets.FIREBASE_IOS_APP_ID }}
+  FIREBASE_ANDROID_APP_ID: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
   PLAY_STORE_CREDENTIALS: ${{ secrets.PLAY_STORE_CREDENTIALS }}
   ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
