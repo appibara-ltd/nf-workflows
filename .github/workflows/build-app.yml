@@ -254,6 +254,9 @@ jobs:
       - name: Install Gems
         run: bundle install
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main
         with:
