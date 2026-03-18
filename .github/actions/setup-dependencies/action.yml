@@ -61,5 +61,5 @@ runs:
 
     - name: Install iOS Pods
       shell: bash
-      if: !inputs.setup_java && inputs.native_active
+      if: ${{ !inputs.setup_java && inputs.native_active }}
       run: npm run pod-install
