@@ -31,10 +31,6 @@ on:
         description: "Application owner"
         default: "NativeFlow"
         type: string
-      xcode_version:
-        description: "Xcode version"
-        default: "/Applications/Xcode_26.2.app"
-        type: string
       build_ios:
         description: "Build iOS"
         default: true

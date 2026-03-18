@@ -120,6 +120,7 @@ env:
   BUNDLE_GEMFILE: nf_fastlane/Gemfile
   BUNDLE_PATH: ../vendor/bundle
   BUNDLE_FORCE_RUBY_PLATFORM: true
+  RELEASE_ASSET_PATH: ''
 
 permissions:
   contents: write  # This is the critical line for releases
