@@ -146,6 +146,9 @@ jobs:
 
       - name: Setup Dependencies
         uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
+        with:
+          setup_java: false
+          native_active: true
 
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main
@@ -185,6 +188,7 @@ jobs:
         uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
         with:
           setup_java: true
+          native_active: true
 
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main

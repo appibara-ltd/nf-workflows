@@ -59,23 +59,11 @@ jobs:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
 
-      - name: Install mise
-        uses: jdx/mise-action@v4
-
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-
-      - name: Cache npm
-        uses: actions/cache@v5
+      - name: Setup Dependencies
+        uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
         with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install Node Modules
-        run: npm ci
+          setup_java: true
+          native_active: false
 
       - name: Set App Info
         run: npm run app set -- --name "${{ inputs.name }}" --market-version "${{ inputs.version }}" --bundle-id "${{ inputs.bundle_id }}" --bundle-version ${{ inputs.bundle_version }} --owner "${{ inputs.owner }}"
@@ -100,11 +88,11 @@ jobs:
           sdk_version: ${{ inputs.sdk_version }}
           sdk_location: ${{ inputs.sdk_location }}
 
-      - name: Install mise
-        uses: jdx/mise-action@v4
-
-      - name: Install Node Modules
-        run: npm ci
+      - name: Setup Dependencies
+        uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
+        with:
+          setup_java: true
+          native_active: false
 
       - name: Set App Info
         run: npm run app set -- --name "${{ inputs.name }}" --market-version "${{ inputs.version }}" --bundle-id "${{ inputs.bundle_id }}" --bundle-version ${{ inputs.bundle_version }} --owner "${{ inputs.owner }}"

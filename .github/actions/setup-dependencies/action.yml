@@ -7,6 +7,11 @@ inputs:
     required: false
     default: false
     type: boolean
+  native_active:
+    description: "Setup native dependencies"
+    required: false
+    default: true
+    type: boolean
 
 runs:
   using: composite
@@ -20,7 +25,7 @@ runs:
           ${{ inputs.setup_java && 'java zulu-17' || '' }}
 
     - name: Setup Gradle
-      if: inputs.setup_java
+      if: inputs.setup_java && inputs.native_active
       uses: gradle/actions/setup-gradle@v5
 
     - name: Get npm cache directory
@@ -41,6 +46,7 @@ runs:
       run: npm ci
 
     - name: Cache vendor/bundle
+      if: inputs.native_active
       uses: actions/cache@v5
       with:
         path: vendor
@@ -49,10 +55,11 @@ runs:
           ${{ runner.os }}-gems-
 
     - name: Install Gems
+      if: inputs.native_active
       shell: bash
       run: bundle install
 
     - name: Install iOS Pods
       shell: bash
-      if: !inputs.setup_java
+      if: !inputs.setup_java && inputs.native_active
       run: npm run pod-install
