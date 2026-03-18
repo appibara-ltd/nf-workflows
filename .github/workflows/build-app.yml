@@ -94,7 +94,6 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  FASTLANE_FASTFILE: ./fastlane/Fastfile
   WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
   SCHEME: ${{ secrets.SCHEME }}
   APP_IDENTIFIER: ${{ inputs.bundle_id }}
@@ -117,6 +116,10 @@ env:
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
   ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
   ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  FASTLANE_FASTFILE: ./nf_fastlane/Fastfile
+  BUNDLE_GEMFILE: nf_fastlane/Gemfile
+  BUNDLE_PATH: ../vendor/bundle
+  BUNDLE_FORCE_RUBY_PLATFORM: true
 
 permissions:
   contents: write  # This is the critical line for releases
@@ -141,38 +144,8 @@ jobs:
       - name: Setup Fastlane
         uses: appibara-ltd/nf-workflows/.github/actions/setup-fastlane@main
 
-      - name: Install mise
-        uses: jdx/mise-action@v4
-        with:
-          tool_versions: |
-            ruby 3.4.8
-            nodejs 24
-
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-
-      - name: Cache npm
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install Node Modules
-        run: npm ci
-
-      - name: Cache vendor/bundle
-        uses: actions/cache@v5
-        with:
-          path: vendor
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-
-
-      - name: Install Gems
-        run: bundle install
+      - name: Setup Dependencies
+        uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
 
       # React Native related
       - name: Install iOS Pods
@@ -186,13 +159,6 @@ jobs:
           bundle_id: ${{ inputs.bundle_id }}
           bundle_version: ${{ inputs.bundle_version }}
           owner: ${{ inputs.owner }}
-
-      # React Native related
-      - name: Configure Node Path for Xcode
-        run: |
-          NODE_PATH=$(command -v node)
-          echo "export NODE_BINARY=$NODE_PATH" > ios/.xcode.env.local
-          echo "Xcode will use Node at: $NODE_PATH"
 
       - name: Build & Sign & Publish to TestFlight
         run: bundle exec fastlane ios internal
@@ -220,42 +186,10 @@ jobs:
       - name: Setup Fastlane
         uses: appibara-ltd/nf-workflows/.github/actions/setup-fastlane@main
 
-      - name: Install mise
-        uses: jdx/mise-action@v4
+      - name: Setup Dependencies
+        uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
         with:
-          tool_versions: |
-            ruby 3.4.8
-            nodejs 24
-            java zulu-17
-
-      - name: Get npm cache directory
-        id: npm-cache-dir
-        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-
-      - name: Cache npm
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install Node Modules
-        run: npm ci
-
-      - name: Cache vendor/bundle
-        uses: actions/cache@v5
-        with:
-          path: vendor
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-
-
-      - name: Install Gems
-        run: bundle install
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+          setup_java: true
 
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main

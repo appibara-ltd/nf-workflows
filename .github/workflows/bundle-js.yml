@@ -3,11 +3,6 @@ name: Create Bundle
 on:
   workflow_call:
     inputs:
-      working-directory:
-        description: "Working directory for the project"
-        required: false
-        type: string
-        default: "."
       sdk_version:
         description: "Nativeflow sdk version"
         default: "0.0.1"

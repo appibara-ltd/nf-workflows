@@ -1,0 +1,53 @@
+name: Setup Dependencies
+description: Setup dependencies
+
+inputs:
+  setup_java:
+    description: "Setup Java and Gradle"
+    required: false
+    default: false
+    type: boolean
+
+runs:
+  using: composite
+  steps:
+    - name: Install mise
+      uses: jdx/mise-action@v4
+      with:
+        tool_versions: |
+          ruby 3.4.8
+          nodejs 24
+          ${{ inputs.setup_java && 'java zulu-17' || '' }}
+
+    - name: Setup Gradle
+      if: inputs.setup_java
+      uses: gradle/actions/setup-gradle@v5
+
+    - name: Get npm cache directory
+      shell: bash
+      id: npm-cache-dir
+      run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+
+    - name: Cache npm
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.npm-cache-dir.outputs.dir }}
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
+
+    - name: Install Node Modules
+      shell: bash
+      run: npm ci
+
+    - name: Cache vendor/bundle
+      uses: actions/cache@v5
+      with:
+        path: vendor
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    - name: Install Gems
+      shell: bash
+      run: bundle install
