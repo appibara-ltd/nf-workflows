@@ -116,8 +116,8 @@ env:
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
   ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
   ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-  FASTLANE_FASTFILE: ./nf_fastlane/Fastfile
-  BUNDLE_GEMFILE: nf_fastlane/Gemfile
+  FASTLANE_FASTFILE: ./fastlane/Fastfile
+  BUNDLE_GEMFILE: ./fastlane/Gemfile
   BUNDLE_PATH: ../vendor/bundle
   BUNDLE_FORCE_RUBY_PLATFORM: true
   RELEASE_ASSET_PATH: ''

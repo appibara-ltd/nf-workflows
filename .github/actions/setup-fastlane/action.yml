@@ -12,8 +12,8 @@ runs:
     - name: Move Fastlane
       shell: bash
       run: |
-        if [ -d "./nf_fastlane" ]; then rm -rf ./nf_fastlane; fi
-        mv ./nf_workflows/fastlane ./nf_fastlane
+        if [ -d "./fastlane" ]; then rm -rf ./fastlane; fi
+        mv ./nf_workflows/fastlane ./fastlane
 
     - name: Remove nf_workflows
       shell: bash
