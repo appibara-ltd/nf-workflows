@@ -51,3 +51,8 @@ runs:
     - name: Install Gems
       shell: bash
       run: bundle install
+
+    - name: Install iOS Pods
+      shell: bash
+      if: !inputs.setup_java
+      run: npm run pod-install

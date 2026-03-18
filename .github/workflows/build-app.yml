@@ -147,10 +147,6 @@ jobs:
       - name: Setup Dependencies
         uses: appibara-ltd/nf-workflows/.github/actions/setup-dependencies@main
 
-      # React Native related
-      - name: Install iOS Pods
-        run: npm run pod-install
-
       - name: Setup NF Application
         uses: appibara-ltd/nf-workflows/.github/actions/setup-nf-application@main
         with:
@@ -169,7 +165,6 @@ jobs:
         with:
           name: archive-ipa
           path: ${{ env.RELEASE_ASSET_PATH }}
-
 
   Android:
     runs-on: ubuntu-latest

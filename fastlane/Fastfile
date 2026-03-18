@@ -256,9 +256,9 @@ platform :android do
     latest_build_number = version_codes.empty? ? 0 : version_codes.first
     new_build_number = latest_build_number + 1
 
-    increment_version_code(
-      gradle_file_path: config[:app_gradle_file_path],
-      version_code: new_build_number
+    android_set_version_code(
+      version_code: new_build_number,
+      gradle_file: config[:app_gradle_file_path]
     )
 
     gradle(
@@ -272,8 +272,10 @@ platform :android do
         "android.injected.signing.store.password" => config[:key_store_password],
         "android.injected.signing.key.alias" => config[:key_alias],
         "android.injected.signing.key.password" => config[:key_password],
-        # "android.injected.version.code" => 100,
+        "android.injected.version.code" => new_build_number,
         # "android.injected.version.name" => "1.0.0",
+      },
+      system_properties:{
         "org.gradle.jvmargs" => "-Xmx4096m -XX:MaxMetaspaceSize=2048m",
       }
     )
@@ -323,13 +325,11 @@ platform :android do
       service_credentials_file: config[:firebase_credentials_path]
     )
 
-    puts "latest_release: #{latest_release}"
-    build_number = (latest_release&.[](:buildVersion).to_i || 0) + 1
-    new_build_number = build_number + 1
+    new_build_number = (latest_release&.[](:buildVersion).to_i || 0) + 1
 
-    increment_version_code(
-      gradle_file_path: config[:app_gradle_file_path],
-      version_code: new_build_number
+    android_set_version_code(
+      version_code: new_build_number,
+      gradle_file: config[:app_gradle_file_path]
     )
 
     gradle(
@@ -345,6 +345,8 @@ platform :android do
         "android.injected.signing.key.password" => config[:key_password],
         "android.injected.version.code" => new_build_number,
         # "android.injected.version.name" => "1.0.0",
+      },
+      system_properties:{
         "org.gradle.jvmargs" => "-Xmx4096m -XX:MaxMetaspaceSize=2048m",
       }
     )
