@@ -303,7 +303,7 @@ platform :android do
     play_store_params = {
       package_name: config[:app_identifier],
       track: "internal",
-      release_status: "draft",
+      release_status: "completed",
       json_key: config[:play_store_credentials_path]
     }
 
