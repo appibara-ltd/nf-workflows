@@ -16,6 +16,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install ccache
+      if: ${{ inputs.setup_java == 'true' && inputs.native_active == 'true' }}
+      shell: bash
+      run: sudo apt-get install -y ccache
+
     - name: Install mise
       uses: jdx/mise-action@v4
       with:
@@ -29,6 +34,14 @@ runs:
       uses: gradle/actions/setup-gradle@v5
       with:
         add-job-summary: 'on-failure'
+
+    - name: Cache ccache
+      if: ${{ inputs.setup_java == 'true' && inputs.native_active == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ccache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: ccache-${{ runner.os }}-
 
     - name: Get npm cache directory
       shell: bash

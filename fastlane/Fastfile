@@ -21,8 +21,7 @@ platform :ios do
   desc "Push a new build to TestFlight"
 
   lane :internal do
-    export_method = DEFAULT_EXPORT_METHOD
-    result        = setup(export_method: export_method)
+    result        = setup(export_method: "app-store")
     config        = result[:config]
     api_key       = result[:api_key]
 
@@ -39,10 +38,10 @@ platform :ios do
       build_number: build_number
     )
 
-    archive_result = create_archive(export_method: export_method)
+    archive_result = create_archive(export_method: config[:export_method])
 
     ipa_result = create_ipa(
-      export_method: export_method,
+      export_method: config[:export_method],
       archive_path: archive_result[:archive_path]
     )
 
@@ -82,8 +81,7 @@ platform :ios do
   end
 
   lane :adhoc do
-    export_method = "ad-hoc"
-    result  = setup(export_method: export_method)
+    result  = setup(export_method: "ad-hoc")
     config  = result[:config]
 
     latest_release = firebase_app_distribution_get_latest_release(
@@ -98,10 +96,10 @@ platform :ios do
       build_number: build_number
     )
 
-    archive_result = create_archive(export_method: export_method)
+    archive_result = create_archive(export_method: config[:export_method])
 
     ipa_result = create_ipa(
-      export_method: export_method,
+      export_method: config[:export_method],
       archive_path: archive_result[:archive_path]
     )
 
@@ -303,7 +301,7 @@ platform :android do
     play_store_params = {
       package_name: config[:app_identifier],
       track: "internal",
-      release_status: "completed",
+      release_status: "draft",
       json_key: config[:play_store_credentials_path]
     }
 

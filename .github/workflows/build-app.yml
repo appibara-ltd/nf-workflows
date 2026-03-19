@@ -121,6 +121,8 @@ env:
   BUNDLE_GEMFILE: ${{ github.workspace }}/fastlane/Gemfile
   BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
   BUNDLE_FORCE_RUBY_PLATFORM: true
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  NDK_CCACHE: ccache
   RELEASE_ASSET_PATH: ''
 
 permissions:
