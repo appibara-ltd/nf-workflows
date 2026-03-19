@@ -27,6 +27,8 @@ runs:
     - name: Setup Gradle
       if: ${{ inputs.setup_java == 'true' && inputs.native_active == 'true' }}
       uses: gradle/actions/setup-gradle@v5
+      with:
+        add-job-summary: 'on-failure'
 
     - name: Get npm cache directory
       shell: bash

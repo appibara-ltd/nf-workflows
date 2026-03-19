@@ -94,6 +94,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GRADLE_ACTIONS_SKIP_BUILD_RESULT_CAPTURE: true
   WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
   SCHEME: ${{ secrets.SCHEME }}
   APP_IDENTIFIER: ${{ inputs.bundle_id }}
