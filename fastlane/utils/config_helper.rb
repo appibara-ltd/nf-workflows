@@ -67,6 +67,7 @@ module ConfigHelper
     silent                        = optional_env("SILENT", default: false)
     send_changelog_to_testflight  = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
     output_path                   = "lane_outputs"
+    derived_data_path             = "derived_data"
 
     root_dir_name = find_project_root(File.dirname(__FILE__))
 
@@ -82,6 +83,7 @@ module ConfigHelper
       xcarchive_path: "#{root_dir_name}/#{output_path}/#{platform}/archive/Archive.xcarchive",
       ipa_output_directory: "#{root_dir_name}/#{output_path}/#{platform}/output/",
       zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/#{scheme}.zip",
+      derived_data_path: "#{root_dir_name}/#{derived_data_path}",
       scheme: scheme,
       team_id: team_id,
       itc_team_id: itc_team_id,

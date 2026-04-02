@@ -91,6 +91,24 @@ runs:
       shell: bash
       run: bundle install
 
+    - name: Cache DerivedData
+      uses: actions/cache@v5
+      if: ${{ inputs.setup_java != 'true' && inputs.native_active == 'true' }}
+      with:
+        path: ${{ github.workspace }}/derived_data
+        key: ${{ runner.os }}-derived-data-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-derived-data-
+
+    - name: Cache Pods
+      uses: actions/cache@v5
+      if: ${{ inputs.setup_java != 'true' && inputs.native_active == 'true' }}
+      with:
+        path: ${{ github.workspace }}/ios/Pods
+        key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pods-
+
     - name: Install iOS Pods
       shell: bash
       if: ${{ inputs.setup_java != 'true' && inputs.native_active == 'true' }}
