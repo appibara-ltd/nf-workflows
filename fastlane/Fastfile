@@ -267,6 +267,7 @@ platform :android do
       print_command: false,
       project_dir: config[:project_dir],
       gradle_path: config[:gradle_path],
+      flags: "--build-cache --no-daemon",
       properties: {
         "android.injected.signing.store.file" => config[:key_store_path],
         "android.injected.signing.store.password" => config[:key_store_password],
