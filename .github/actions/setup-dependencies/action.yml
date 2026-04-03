@@ -65,7 +65,17 @@ runs:
         restore-keys: |
           ${{ runner.os }}-android-gradle-
 
+    - name: Cache android/build
+      if: ${{ inputs.setup_java == 'true' && inputs.native_active == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: ${{ github.workspace }}/android/build
+        key: ${{ runner.os }}-android-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-android-build-
+
     - name: Cache node modules
+      id: cache-node-modules
       uses: actions/cache@v5
       with:
         path: node_modules
@@ -74,11 +84,13 @@ runs:
           ${{ runner.os }}-node-modules-
 
     - name: Install Node Modules
+      if: steps.cache-node-modules.outputs.cache-hit != 'true'
       shell: bash
       run: npm ci
 
     - name: Cache vendor/bundle
       if: ${{ inputs.native_active == 'true' }}
+      id: cache-vendor-bundle
       uses: actions/cache@v5
       with:
         path: vendor
@@ -87,7 +99,7 @@ runs:
           ${{ runner.os }}-gems-
 
     - name: Install Gems
-      if: ${{ inputs.native_active == 'true' }}
+      if: ${{ inputs.native_active == 'true' && steps.cache-vendor-bundle.outputs.cache-hit != 'true' }}
       shell: bash
       run: bundle install
 
@@ -99,6 +111,24 @@ runs:
         key: ${{ runner.os }}-derived-data-${{ hashFiles('**/Podfile.lock') }}
         restore-keys: |
           ${{ runner.os }}-derived-data-
+
+    - name: Cache CocoaPods
+      uses: actions/cache@v5
+      if: ${{ inputs.setup_java != 'true' && inputs.native_active == 'true' }}
+      with:
+        path: ~/Library/Caches/CocoaPods
+        key: ${{ runner.os }}-lib-cocoapods-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-lib-cocoapods-
+
+    - name: Cache CocoaPods
+      uses: actions/cache@v5
+      if: ${{ inputs.setup_java != 'true' && inputs.native_active == 'true' }}
+      with:
+        path: ~/.cocoapods
+        key: ${{ runner.os }}-cocoapods-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cocoapods-
 
     - name: Cache Pods
       uses: actions/cache@v5

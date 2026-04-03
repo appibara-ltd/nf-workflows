@@ -174,7 +174,7 @@ jobs:
           path: ${{ env.RELEASE_ASSET_PATH }}
 
   Android:
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     if: inputs.build_android
     steps:
       - uses: actions/checkout@v6
