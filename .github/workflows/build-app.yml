@@ -122,6 +122,8 @@ env:
   BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
   BUNDLE_FORCE_RUBY_PLATFORM: true
   CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
   NDK_CCACHE: ccache
   RELEASE_ASSET_PATH: ''
 

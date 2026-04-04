@@ -277,6 +277,8 @@ platform :android do
         # "android.injected.version.name" => "1.0.0",
       },
       system_properties:{
+        "org.gradle.caching" => "true",
+        "org.gradle.configuration-cache" => "true",
         "org.gradle.parallel" => "true",
         "org.gradle.jvmargs" => "-Xmx8192m -XX:MaxMetaspaceSize=4096m",
       }
@@ -349,6 +351,8 @@ platform :android do
         # "android.injected.version.name" => "1.0.0",
       },
       system_properties:{
+        "org.gradle.caching" => "true",
+        "org.gradle.configuration-cache" => "true",
         "org.gradle.parallel" => "true",
         "org.gradle.jvmargs" => "-Xmx8192m -XX:MaxMetaspaceSize=4096m",
       }
