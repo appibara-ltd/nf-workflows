@@ -16,9 +16,9 @@ platform :ios do
   lane :setup do |options|
     next $setup_ios_result unless $setup_ios_result.nil?
 
-    config = ConfigHelper.ios_config(export_method: options[:export_method], platform: :ios)
+    config = ConfigHelper.ios_config(export_method: options[:export_method], platform: :ios, is_ci: is_ci)
     setup_ci if ENV['CI']
-    clear_derived_data
+    clear_derived_data if ENV["CI"]
     match_type = config[:match_type]
 
     FileHelper.decode_base64_to_file(
@@ -49,7 +49,7 @@ platform :ios do
       git_url: config[:match_git_url],
       git_branch: config[:match_git_branch],
       api_key: api_key,
-      readonly: is_ci,
+      readonly: config[:match_readonly],
       git_private_key: FileHelper.decode_base64(config[:match_git_private_key_base64])
     )
 

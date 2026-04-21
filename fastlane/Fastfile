@@ -125,7 +125,7 @@ platform :ios do
       ipa_path: ipa_result[:path]
     )
 
-    clean_build_artifacts
+    clean_build_artifacts if ENV["CI"]
   end
 
   lane :create_archive do |options|

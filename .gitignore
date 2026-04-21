@@ -5,3 +5,4 @@ fastlane/report.xml
 id_*
 id_*.pub
 .env.deploy
+firebase_credentials.json

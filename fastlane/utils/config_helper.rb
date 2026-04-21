@@ -30,20 +30,21 @@ module ConfigHelper
     result
   end
 
-  # Walks up from a given directory to find the nearest package.json,
+  # Walks up from a given directory to find the nearest .tool-versions,
   # returns the directory containing it (project root).
   def self.find_project_root(start_dir)
     dir = File.expand_path(start_dir)
     loop do
-      return dir if File.exist?(File.join(dir, "package.json"))
+      return dir if File.exist?(File.join(dir, ".tool-versions"))
 
       parent = File.dirname(dir)
-      Fastlane::UI.user_error!("Could not find package.json in any parent directory of #{start_dir}") if parent == dir
+      Fastlane::UI.user_error!("Could not find .tool-versions in any parent directory of #{start_dir}") if parent == dir
       dir = parent
     end
   end
 
-  def self.ios_config(export_method: "app-store", platform: :ios)
+  def self.ios_config(export_method: "app-store", platform: :ios, is_ci: true)
+    root_dir_name   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
     workspace_name  = optional_env("WORKSPACE_NAME", default: "nativeflowbase")
     scheme          = optional_env("SCHEME", default: "base")
 
@@ -57,6 +58,7 @@ module ConfigHelper
     match_git_url                 = require_env("MATCH_REPO_URL")
     match_username                = require_env("MATCH_REPO_USERNAME")
     match_password                = require_env("MATCH_PASSWORD")
+    match_readonly                = optional_env("MATCH_READONLY", default: is_ci)
     match_git_branch              = require_env("MATCH_REPO_BRANCH")
     match_git_private_key_base64  = require_env("MATCH_REPO_PRIVATE_KEY")
     
@@ -68,8 +70,6 @@ module ConfigHelper
     send_changelog_to_testflight  = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
     output_path                   = "lane_outputs"
     derived_data_path             = "derived_data"
-
-    root_dir_name = find_project_root(File.dirname(__FILE__))
 
     {
       configuration: "Release",
@@ -94,6 +94,7 @@ module ConfigHelper
       slack_url: slack_url,
       match_git_url: match_git_url,
       match_username: match_username,
+      match_readonly: match_readonly,
       match_password: match_password,
       match_git_branch: match_git_branch,
       match_git_private_key_base64: match_git_private_key_base64,
@@ -107,6 +108,7 @@ module ConfigHelper
   end
 
   def self.android_config(export_method: "apk", platform: :android)
+    root_dir_name   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
     app_identifier  = require_env("APP_IDENTIFIER")
 
     key_store_base64              = require_env("ANDROID_KEYSTORE")
@@ -120,8 +122,6 @@ module ConfigHelper
     play_store_credentials_base64 = optional_env("PLAY_STORE_CREDENTIALS")
 
     output_path                   = "lane_outputs"
-
-    root_dir_name = find_project_root(File.dirname(__FILE__))
 
     {
       slack_url: slack_url,
