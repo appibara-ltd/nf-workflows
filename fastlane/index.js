@@ -72,8 +72,8 @@ function getWorkspaceEnv(options = {}) {
     GITHUB_REPOSITORY:
       process.env.GITHUB_REPOSITORY || githubRepositoryMatch?.[1],
     GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE || callerWorkspace,
-    WORKSPACE_PATH: process.env.WORKSPACE_PATH || "/ios",
-    ANDROID_PROJECT_PATH: process.env.ANDROID_PROJECT_PATH || "/android",
+    WORKSPACE_PATH: process.env.WORKSPACE_PATH || `${callerWorkspace}/ios`,
+    ANDROID_PROJECT_PATH: process.env.ANDROID_PROJECT_PATH || `${callerWorkspace}/android`,
     SCHEME: scheme,
     WORKSPACE_NAME: workspaceName,
     BUNDLE_GEMFILE:
