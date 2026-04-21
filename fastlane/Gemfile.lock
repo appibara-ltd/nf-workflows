@@ -340,6 +340,7 @@ DEPENDENCIES
   json
   logger
   mutex_m
+  nkf
   ostruct
   pry
   xcodeproj (>= 1.27.0, < 2.0)

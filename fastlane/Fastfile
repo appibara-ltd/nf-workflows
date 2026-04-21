@@ -273,12 +273,9 @@ platform :android do
         "android.injected.signing.store.password" => config[:key_store_password],
         "android.injected.signing.key.alias" => config[:key_alias],
         "android.injected.signing.key.password" => config[:key_password],
-        "android.injected.version.code" => new_build_number,
-        # "android.injected.version.name" => "1.0.0",
       },
       system_properties:{
         "org.gradle.caching" => "true",
-        "org.gradle.configuration-cache" => "true",
         "org.gradle.parallel" => "true",
         "org.gradle.jvmargs" => "-Xmx8192m -XX:MaxMetaspaceSize=4096m",
       }
@@ -347,12 +344,9 @@ platform :android do
         "android.injected.signing.store.password" => config[:key_store_password],
         "android.injected.signing.key.alias" => config[:key_alias],
         "android.injected.signing.key.password" => config[:key_password],
-        "android.injected.version.code" => new_build_number,
-        # "android.injected.version.name" => "1.0.0",
       },
       system_properties:{
         "org.gradle.caching" => "true",
-        "org.gradle.configuration-cache" => "true",
         "org.gradle.parallel" => "true",
         "org.gradle.jvmargs" => "-Xmx8192m -XX:MaxMetaspaceSize=4096m",
       }

@@ -1,0 +1,7 @@
+vendor
+node_modules
+fastlane/README.md
+fastlane/report.xml
+id_*
+id_*.pub
+.env.deploy
