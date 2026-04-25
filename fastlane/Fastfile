@@ -164,7 +164,7 @@ platform :ios do
       skip_profile_detection: true,
       codesigning_identity: cert_name,
       skip_build_archive: false,
-      skip_codesigning: true,
+      skip_codesigning: false,
       skip_package_ipa: true,
       export_method: config[:export_method],
       export_team_id: config[:team_id],
