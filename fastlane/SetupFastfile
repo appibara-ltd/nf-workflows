@@ -16,7 +16,7 @@ platform :ios do
   lane :setup do |options|
     next $setup_ios_result unless $setup_ios_result.nil?
 
-    config = ConfigHelper.ios_config(export_method: options[:export_method], platform: :ios, is_ci: is_ci)
+    config = ConfigHelper.platform_config(platform: :ios, export_method: options[:export_method], is_ci: is_ci)
     setup_ci if ENV['CI']
     clear_derived_data if ENV["CI"]
     match_type = config[:match_type]
@@ -81,7 +81,7 @@ platform :android do
   lane :setup do |options|
     next $setup_android_result unless $setup_android_result.nil?
 
-    config = ConfigHelper.android_config(export_method: options[:export_method], platform: :android)
+    config = ConfigHelper.platform_config(platform: :android, export_method: options[:export_method], is_ci: is_ci)
 
     FileHelper.decode_base64_to_file(
       config[:firebase_credentials_base64],

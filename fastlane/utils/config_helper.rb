@@ -43,37 +43,98 @@ module ConfigHelper
     end
   end
 
-  def self.ios_config(export_method: "app-store", platform: :ios, is_ci: true)
-    root_dir_name   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
-    workspace_name  = optional_env("WORKSPACE_NAME", default: "nativeflowbase")
-    scheme          = optional_env("SCHEME", default: "base")
+  def self.find_ios_project_name(ios_dir)
+    xcworkspace = Dir.glob(File.join(ios_dir, "*.xcworkspace")).first
+    return File.basename(xcworkspace, ".xcworkspace") if xcworkspace
 
-    app_identifier  = require_env("APP_IDENTIFIER")
-    team_id         = require_env("APPLE_DEVELOPER_PORTAL_TEAM_ID")
-    itc_team_id     = require_env("APPLE_STORE_CONNECT_TEAM_ID")
-    key_base64      = require_env("APPLE_KEY")
-    key_id          = require_env("APPLE_KEY_ID")
-    issuer_id       = require_env("APPLE_ISSUER_ID")
+    xcodeproj = Dir.glob(File.join(ios_dir, "*.xcodeproj")).first
+    return File.basename(xcodeproj, ".xcodeproj") if xcodeproj
 
-    match_git_url                 = require_env("MATCH_REPO_URL")
-    match_username                = require_env("MATCH_REPO_USERNAME")
-    match_password                = require_env("MATCH_PASSWORD")
-    match_readonly                = optional_env("MATCH_READONLY", default: is_ci)
-    match_git_branch              = require_env("MATCH_REPO_BRANCH")
-    match_git_private_key_base64  = require_env("MATCH_REPO_PRIVATE_KEY")
-    
-    slack_url                     = optional_env("SLACK_URL")
-    firebase_app_id               = require_env("FIREBASE_IOS_APP_ID")
-    firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
-    firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
-    silent                        = optional_env("SILENT", default: false)
-    send_changelog_to_testflight  = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
-    output_path                   = "lane_outputs"
-    derived_data_path             = "derived_data"
+    nil
+  end
+
+  def self.find_ios_scheme(ios_dir, workspace_name)
+    return nil unless workspace_name
+
+    project_path = File.join(ios_dir, "#{workspace_name}.xcodeproj")
+    unless File.exist?(project_path)
+      project_path = Dir.glob(File.join(ios_dir, "*.xcodeproj")).first
+      return workspace_name unless project_path
+    end
+
+    begin
+      require 'xcodeproj'
+      schemes = Xcodeproj::Project.schemes(project_path)
+      return schemes.first unless schemes.empty?
+    rescue LoadError, StandardError => e
+      Fastlane::UI.important("Failed to read schemes using xcodeproj: #{e.message}")
+    end
+
+    File.basename(project_path, ".xcodeproj")
+  end
+
+  def self.common_config()
+    app_identifier                  = require_env("APP_IDENTIFIER")
+    root_dir_name                   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
+    slack_url                       = optional_env("SLACK_URL", default: nil)
+    slack_mentions                  = optional_env("SLACK_MENTIONS", default: "")
+    firebase_credentials_base64     = optional_env("FIREBASE_CREDENTIALS", default: nil)
+    firebase_tester_group           = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
+    output_path                     = "lane_outputs"
+    derived_data_path               = "derived_data"
 
     {
-      configuration: "Release",
+      app_configuration: "Release",
+      build_environment: optional_env("BUILD_ENVIRONMENT", default: "development") == 'production' ? 'Prod' : 'Dev',
+      slack_url: slack_url,
+      slack_mentions: slack_mentions,
+      app_identifier: app_identifier,
+      root_dir_name: root_dir_name,
+      firebase_credentials_base64: firebase_credentials_base64,
+      firebase_tester_group: firebase_tester_group,
+      output_path: output_path,
+      derived_data_path: derived_data_path,
+      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+    }
+  end
+
+  def self.ios_config(export_method: "app-store", is_ci: true)
+    platform                        = :ios
+    commons                         = common_config()
+    root_dir_name                   = commons[:root_dir_name]
+    app_identifier                  = commons[:app_identifier]
+    firebase_tester_group           = commons[:firebase_tester_group]
+    firebase_credentials_base64     = commons[:firebase_credentials_base64]
+    output_path                     = commons[:output_path]
+    derived_data_path               = commons[:derived_data_path]
+    firebase_credentials_path       = commons[:firebase_credentials_path]
+    slack_url                       = commons[:slack_url]
+    slack_mentions                  = commons[:slack_mentions]
+
+    workspace_name                  = optional_env("WORKSPACE_NAME", default: find_ios_project_name("#{root_dir_name}/ios"))
+    scheme                          = optional_env("SCHEME", default: find_ios_scheme("#{root_dir_name}/ios", workspace_name))
+    team_id                         = require_env("APPLE_DEVELOPER_PORTAL_TEAM_ID")
+    itc_team_id                     = require_env("APPLE_STORE_CONNECT_TEAM_ID")
+    key_base64                      = require_env("APPLE_KEY")
+    key_id                          = require_env("APPLE_KEY_ID")
+    issuer_id                       = require_env("APPLE_ISSUER_ID")
+
+    match_git_url                   = require_env("MATCH_REPO_URL")
+    match_username                  = require_env("MATCH_REPO_USERNAME")
+    match_password                  = require_env("MATCH_PASSWORD")
+    match_readonly                  = optional_env("MATCH_READONLY", default: is_ci)
+    match_git_branch                = optional_env("MATCH_REPO_BRANCH", default: "master")
+    match_git_private_key_base64    = require_env("MATCH_REPO_PRIVATE_KEY")
+
+    firebase_app_id                 = require_env("FIREBASE_IOS_APP_ID")
+    silent                          = optional_env("SILENT", default: false)
+    send_changelog_to_testflight    = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
+
+    {
+      build_environment: commons[:build_environment],
+      configuration: commons[:app_configuration],
       export_method: export_method,
+      platform: platform,
       match_type: MATCH_TYPE_MAP[export_method] || export_method,
       in_house: false,
       workspace_name: workspace_name,
@@ -82,7 +143,7 @@ module ConfigHelper
       lane_output_directory: "#{root_dir_name}/#{output_path}/#{platform}",
       xcarchive_path: "#{root_dir_name}/#{output_path}/#{platform}/archive/Archive.xcarchive",
       ipa_output_directory: "#{root_dir_name}/#{output_path}/#{platform}/output/",
-      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/#{scheme}.zip",
+      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/app.zip",
       derived_data_path: "#{root_dir_name}/#{derived_data_path}",
       scheme: scheme,
       team_id: team_id,
@@ -92,6 +153,7 @@ module ConfigHelper
       key_id: key_id,
       issuer_id: issuer_id,
       slack_url: slack_url,
+      slack_mentions: slack_mentions,
       match_git_url: match_git_url,
       match_username: match_username,
       match_readonly: match_readonly,
@@ -101,35 +163,42 @@ module ConfigHelper
       firebase_app_id: firebase_app_id,
       firebase_tester_group: firebase_tester_group,
       firebase_credentials_base64: firebase_credentials_base64,
-      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+      firebase_credentials_path: firebase_credentials_path,
       silent: silent,
       send_changelog_to_testflight: send_changelog_to_testflight
     }
   end
 
-  def self.android_config(export_method: "apk", platform: :android)
-    root_dir_name   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
-    app_identifier  = require_env("APP_IDENTIFIER")
+  def self.android_config(export_method: "apk", is_ci: true)
+    platform                        = :android
+    commons                         = common_config()
+    root_dir_name                   = commons[:root_dir_name]
+    app_identifier                  = commons[:app_identifier]
+    firebase_tester_group           = commons[:firebase_tester_group]
+    firebase_credentials_base64     = commons[:firebase_credentials_base64]
+    output_path                     = commons[:output_path]
+    firebase_credentials_path       = commons[:firebase_credentials_path]
+    slack_url                       = commons[:slack_url]
+    slack_mentions                  = commons[:slack_mentions]
 
-    key_store_base64              = require_env("ANDROID_KEYSTORE")
-    key_store_password            = require_env("ANDROID_KEYSTORE_PASSWORD")
-    key_alias                     = require_env("ANDROID_KEY_ALIAS")
-    key_password                  = require_env("ANDROID_KEY_PASSWORD")
-    slack_url                     = optional_env("SLACK_URL")
-    firebase_app_id               = require_env("FIREBASE_ANDROID_APP_ID")
-    firebase_credentials_base64   = optional_env("FIREBASE_CREDENTIALS")
-    firebase_tester_group         = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
-    play_store_credentials_base64 = optional_env("PLAY_STORE_CREDENTIALS")
-
-    output_path                   = "lane_outputs"
+    key_store_base64                = require_env("ANDROID_KEYSTORE")
+    key_store_password              = require_env("ANDROID_KEYSTORE_PASSWORD")
+    key_alias                       = require_env("ANDROID_KEY_ALIAS")
+    key_password                    = require_env("ANDROID_KEY_PASSWORD")
+    firebase_app_id                 = require_env("FIREBASE_ANDROID_APP_ID")
+    play_store_credentials_base64   = optional_env("PLAY_STORE_CREDENTIALS")
+    play_store_track                = optional_env("PLAY_STORE_TRACK", default: "internal")
+    play_store_release_status       = optional_env("PLAY_STORE_RELEASE_STATUS", default: "draft")
 
     {
+      build_environment: commons[:build_environment],
       slack_url: slack_url,
+      slack_mentions: slack_mentions,
       app_identifier: app_identifier,
       export_method: export_method,
       platform: platform,
       task: export_method == "apk" ? "assemble" : "bundle",
-      build_type: "Release",
+      build_type: commons[:app_configuration],
       project_dir: "#{root_dir_name}/android",
       gradle_path: "#{root_dir_name}/android/gradlew",
       app_gradle_file_path: "#{root_dir_name}/android/app/build.gradle",
@@ -138,13 +207,26 @@ module ConfigHelper
       key_store_password: key_store_password,
       key_alias: key_alias,
       key_password: key_password,
-      firebase_app_id:firebase_app_id,
+      firebase_app_id: firebase_app_id,
       firebase_tester_group: firebase_tester_group,
       firebase_credentials_base64: firebase_credentials_base64,
-      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+      firebase_credentials_path: firebase_credentials_path,
       play_store_credentials_base64: play_store_credentials_base64,
       play_store_credentials_path: "#{root_dir_name}/play_store_credentials.json",
-      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/#{export_method}.zip",
+      play_store_track: play_store_track,
+      play_store_release_status: play_store_release_status,
+      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/app.zip",
     }
+  end
+
+  def self.platform_config(platform: :ios, export_method: "app-store", is_ci: true)
+    case platform
+    when :ios
+      ios_config(export_method: export_method, is_ci: is_ci)
+    when :android
+      android_config(export_method: export_method, is_ci: is_ci)
+    else
+      Fastlane::UI.user_error!("Unsupported platform: #{platform}")
+    end
   end
 end

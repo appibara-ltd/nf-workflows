@@ -51,8 +51,16 @@ platform :ios do
     )
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    release_notes = GithubHelper.release_notes
+    release_notes = GithubHelper.release_notes(
+      cliff: false,
+      platform: :ios,
+      version: ipa_result[:version],
+      build_number: ipa_result[:build_number],
+      build_environment: config[:build_environment]
+    )
     github_release = GithubHelper.create_release(
+      platform: :ios,
+      build_environment: config[:build_environment],
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -109,8 +117,16 @@ platform :ios do
     )
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    release_notes = GithubHelper.release_notes
+    release_notes = GithubHelper.release_notes(
+      cliff: false,
+      platform: :ios,
+      version: ipa_result[:version],
+      build_number: ipa_result[:build_number],
+      build_environment: config[:build_environment]
+    )
     github_release = GithubHelper.create_release(
+      platform: :ios,
+      build_environment: config[:build_environment],
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       release_notes: release_notes,
@@ -290,10 +306,17 @@ platform :android do
     )
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    release_notes = GithubHelper.release_notes
     version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
+    release_notes = GithubHelper.release_notes(
+      cliff: false,
+      platform: :android,
+      version: version_name,
+      build_number: new_build_number,
+      build_environment: config[:build_environment]
+    )
 
     GithubHelper.create_release(
+      build_environment: config[:build_environment],
       platform: :android,
       version: version_name,
       build_number: new_build_number,
@@ -303,8 +326,8 @@ platform :android do
 
     play_store_params = {
       package_name: config[:app_identifier],
-      track: "internal",
-      release_status: "draft",
+      track: config[:play_store_track],
+      release_status: config[:play_store_release_status],
       json_key: config[:play_store_credentials_path]
     }
 
@@ -361,10 +384,18 @@ platform :android do
     )
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    release_notes = GithubHelper.release_notes
     version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
 
+    release_notes = GithubHelper.release_notes(
+      cliff: false,
+      platform: :android,
+      version: version_name,
+      build_number: new_build_number,
+      build_environment: config[:build_environment]
+    )
+
     github_release = GithubHelper.create_release(
+      build_environment: config[:build_environment],
       platform: :android,
       version: version_name,
       build_number: new_build_number,
