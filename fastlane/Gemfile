@@ -23,6 +23,7 @@ gem "abbrev"
 gem "ostruct"
 gem "fastlane"
 gem 'pry'
+gem 'dotenv'
 
 # Fastlane plugins
 gem 'fastlane-plugin-firebase_app_distribution'

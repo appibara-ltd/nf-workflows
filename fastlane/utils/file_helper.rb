@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'base64'
+require 'dotenv'
 require 'fileutils'
 
 module FileHelper
@@ -36,5 +37,12 @@ module FileHelper
 
     Fastlane::UI.message("Zipped #{input_dir_path} -> #{output_path}")
     output_path
+  end
+
+  def self.read_env(env_path: nil)
+    env_path = File.expand_path('../../.env', __dir__) if env_path.nil?
+    Fastlane::UI.user_error!("Env file does not exist: #{env_path}") unless File.exist?(env_path)
+
+    Dotenv.overload(env_path)
   end
 end
