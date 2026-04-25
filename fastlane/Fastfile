@@ -392,3 +392,112 @@ platform :android do
     firebase_app_distribution(firebase_app_distribution_params)
   end
 end
+
+desc "Sync certificates and provisioning profiles"
+lane :match_sync do |options|
+  FileHelper.read_env(env_path: options[:env_path] || File.join(ENV['GITHUB_WORKSPACE'], ".env.deploy"))
+  puts "env file is loaded: #{ENV['APPLE_KEY_ID']}"
+  generate_apple_certs = options[:generate].to_s.strip.downcase == 'true'
+  force = options[:force].to_s.strip.downcase == 'true'
+
+  api_key = app_store_connect_api_key(
+    key_id: ENV['APPLE_KEY_ID'],
+    issuer_id: ENV['APPLE_ISSUER_ID'],
+    is_key_content_base64: true,
+    key_content: ENV['APPLE_KEY'],
+    in_house: false
+  )
+
+  match_options = {
+    # Profile type to sync. Docs default: "development".
+    type: options[:type] || "development",
+    # Extra cert types for macOS installers. Docs default: nil.
+    additional_cert_types: nil,
+    # Fetch only; do not create new certs/profiles. Docs default: false.
+    readonly: false,
+    # Create Apple Development/Distribution certs on supported Xcode/macOS setups.
+    generate_apple_certs: generate_apple_certs,
+    # Skip provisioning profile sync entirely. Docs default: false.
+    skip_provisioning_profiles: false,
+    # Bundle identifiers as comma-separated string or array. Docs default: Appfile app_identifier.
+    app_identifier: options[:app_identifier]&.to_s&.split(",")&.map(&:strip),
+
+    # Path to App Store Connect API key JSON. Docs default: nil.
+    api_key_path: nil,
+    # App Store Connect API key hash. Docs default: nil.
+    api_key: api_key,
+    # Apple ID username. Docs default: Appfile apple_dev_portal_id/apple_id.
+    # username: ENV["MATCH_REPO_USERNAME"],
+    # Developer Portal team id. Docs default: Appfile team_id.
+    team_id: ENV["APPLE_DEVELOPER_PORTAL_TEAM_ID"],
+    # Developer Portal team name. Docs default: Appfile team_name.
+    team_name: nil,
+
+    # Storage backend. Docs default: "git".
+    storage_mode: "git",
+    # Git repo URL that stores certificates. Required for git storage.
+    git_url: ENV["MATCH_REPO_URL"],
+    # Git branch to use. Docs default: "master".
+    git_branch: ENV["MATCH_REPO_BRANCH"],
+    # Git commit author name. Docs default: nil.
+    git_full_name: "NF Fastlane",
+    # Git commit author email. Docs default: nil.
+    git_user_email: ENV["MATCH_REPO_USERNAME"],
+    # Clone only the latest revision. Docs default: false.
+    shallow_clone: false,
+    # Clone only the target branch. Docs default: false.
+    clone_branch_directly: true,
+    # Base64 basic auth header for git access. Docs default: nil.
+    git_basic_authorization: nil,
+    # Base64 bearer auth header for git access. Docs default: nil.
+    git_bearer_authorization: nil,
+    # Deploy key path/content for git access. Docs default: nil.
+    git_private_key: FileHelper.decode_base64(ENV["MATCH_REPO_PRIVATE_KEY"]),
+
+    # Keychain to import certificates into. Docs default: "login.keychain".
+    keychain_name: "login.keychain",
+    # Keychain password, usually needed on new machines. Docs default: nil.
+    keychain_password: nil,
+
+    # Always renew provisioning profiles. Docs default: false.
+    force: force,
+    # Renew profiles when enabled device count changes. Docs default: false.
+    force_for_new_devices: false,
+    # Include Apple Silicon Macs in iOS/iPadOS profiles. Docs default: false.
+    include_mac_in_profiles: false,
+    # Include all matching certs in development profiles. Docs default: false.
+    include_all_certificates: false,
+    # Force a specific certificate id. Docs default: nil.
+    certificate_id: nil,
+    # Renew profiles when certificate count changes. Docs default: false.
+    force_for_new_certificates: false,
+    # Auto-confirm destructive prompts. Docs default: false.
+    skip_confirmation: false,
+    # During nuke, remove from repo without revoking on portal. Docs default: false.
+    safe_remove_certs: false,
+    # Skip README generation in the cert repo. Docs default: false.
+    skip_docs: false,
+    # Provisioning profile platform. Docs default: current lane platform or "ios".
+    platform: "ios",
+    # Prefix Mac Catalyst identifiers for old Xcode projects. Docs default: false.
+    derive_catalyst_app_identifier: false,
+    # Deprecated managed capabilities template name. Docs default: nil.
+    template_name: nil,
+    # Custom provisioning profile name. Docs default: nil.
+    profile_name: nil,
+    # Fail if a duplicate profile name would be created. Docs default: false.
+    fail_on_name_taken: false,
+    # Skip certificate matching; only for import flows. Docs default: false.
+    skip_certificate_matching: false,
+    # Export certs/keys/profiles to a path. Docs default: nil.
+    output_path: nil,
+    # Skip key partition list setup. Docs default: false.
+    skip_set_partition_list: false,
+    # Use legacy CBC encryption for backwards compatibility. Docs default: false.
+    force_legacy_encryption: false,
+    # Print verbose logs and commands. Docs default: false.
+    verbose: false
+  }
+
+  match(match_options.compact)
+end
