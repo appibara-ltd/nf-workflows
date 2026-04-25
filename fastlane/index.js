@@ -32,7 +32,6 @@ function getWorkspaceEnv(options = {}) {
 
   return {
     ...process.env,
-    GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE || callerWorkspace,
     BUILD_ENVIRONMENT: options.production ? "production" : "development",
     SCHEME: process.env.SCHEME || process.env[`SCHEME_${buildType}`],
     BEFORE_ALL: process.env.BEFORE_ALL || process.env[`BEFORE_ALL_${buildType}`],
