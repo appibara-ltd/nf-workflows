@@ -405,8 +405,11 @@ lane :match_sync do |options|
     issuer_id: ENV['APPLE_ISSUER_ID'],
     is_key_content_base64: true,
     key_content: ENV['APPLE_KEY'],
-    in_house: false
+    in_house: options[:in_house] || false
   )
+
+  app_identifier = ENV['APP_IDENTIFIER'] ? ENV['APP_IDENTIFIER'].split(",").map { |id| id.strip } : nil
+  app_identifier = options[:app_identifier].split(",").map { |id| id.strip } if options[:app_identifier]
 
   match_options = {
     # Profile type to sync. Docs default: "development".
@@ -420,7 +423,7 @@ lane :match_sync do |options|
     # Skip provisioning profile sync entirely. Docs default: false.
     skip_provisioning_profiles: false,
     # Bundle identifiers as comma-separated string or array. Docs default: Appfile app_identifier.
-    app_identifier: options[:app_identifier]&.to_s&.split(",")&.map(&:strip),
+    app_identifier: app_identifier,
 
     # Path to App Store Connect API key JSON. Docs default: nil.
     api_key_path: nil,
