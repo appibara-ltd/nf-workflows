@@ -79,7 +79,7 @@ function getWorkspaceEnv(options = {}) {
     BUNDLE_GEMFILE:
       process.env.BUNDLE_GEMFILE || path.join(fastlaneDir, "Gemfile"),
     BUNDLE_PATH:
-      process.env.BUNDLE_PATH || path.join(packageRoot, "vendor", "bundle"),
+      process.env.BUNDLE_PATH || path.join(callerWorkspace, "vendor", "bundle"),
     BUNDLE_FORCE_RUBY_PLATFORM:
       process.env.BUNDLE_FORCE_RUBY_PLATFORM || "true",
     FASTLANE_FASTFILE: path.join(fastlaneDir, "Fastfile"),
