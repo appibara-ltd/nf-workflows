@@ -50,9 +50,11 @@ export async function runCommand(args, options) {
       await run("bundle", ["install"], env);
       cleanup.splice(cleanup.indexOf(stopAnim), 1)
       duration = stopAnim();
-      console.log(pc.green(`✅  Bundle gem install completed. (${pc.bold(duration)})`));
+      const timeString = new Date().toTimeString().split(' ')[0];
+      console.log(pc.dim(pc.gray(`(${timeString})`)) + " " + pc.green(`✅  Bundle gem install completed. (${pc.bold(duration)})`));
     } else {
-      console.log(pc.green(`✅  Bundle gems are ready. (${pc.bold(duration)})`));
+      const timeString = new Date().toTimeString().split(' ')[0];
+      console.log(pc.dim(pc.gray(`(${timeString})`)) + " " + pc.green(`✅  Bundle gems are ready. (${pc.bold(duration)})`));
     }
 
     stopAnim = logProcess('🚀  [Fastlane]: process');
@@ -60,7 +62,8 @@ export async function runCommand(args, options) {
     await runFastlane(args, env);
     cleanup.splice(cleanup.indexOf(stopAnim), 1)
     duration = stopAnim();
-    console.log(pc.green(`✅  Fastlane process completed. (${pc.bold(duration)})`));
+    const timeString = new Date().toTimeString().split(' ')[0];
+    console.log(pc.dim(pc.gray(`(${timeString})`)) + " " + pc.green(`✅  Fastlane process completed. (${pc.bold(duration)})`));
   } finally {
     stopServer();
     cleanupServerListeners();

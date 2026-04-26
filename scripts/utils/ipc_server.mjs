@@ -9,11 +9,12 @@ import crypto from 'node:crypto';
 const defaultMessageLogger = (msg, group = 'Fastlane') => {
   if (msg.event) {
     process.stdout.write('\r\x1b[K');
-    console.log(`${pc.cyan(`⚡  [${group}]`)}: ${pc.white(msg.event)}`);
+    const timeString = new Date().toTimeString().split(' ')[0];
+    console.log(`${pc.dim(pc.gray(`(${timeString})`))} ${pc.cyan(`⚡  [${group}]:`)} ${pc.white(msg.event)}`);
     if (msg.payload && Object.keys(msg.payload).length > 0) {
       for (const [key, value] of Object.entries(msg.payload)) {
         const valStr = typeof value === 'object' ? JSON.stringify(value) : value;
-        console.log(`${pc.cyan('⚡')}${" ".repeat(12 - key.length)}${key}: ${valStr}`);
+        console.log(`${" ".repeat(16)}${pc.dim((key).padEnd(20, " ") + ":")} ${valStr}`);
       }
     }
   }

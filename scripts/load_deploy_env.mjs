@@ -9,5 +9,6 @@ export function loadDeployEnv() {
   const envPath = path.join(callerWorkspace, ".env.deploy");
   if (!fs.existsSync(envPath)) return;
   dotenv.config({ path: envPath, override: true, quiet: true });
-  console.log(pc.green(`⚙️   Loaded env from ${pc.bold(path.relative(process.cwd(), envPath))}`));
+  const timeString = new Date().toTimeString().split(' ')[0];
+  console.log(pc.dim(pc.gray(`(${timeString})`)) + " " + pc.green(`⚙️   Loaded env from ${pc.bold(path.relative(process.cwd(), envPath))}`));
 }

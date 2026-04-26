@@ -22,12 +22,13 @@ platform :ios do
     clear_derived_data if ENV["CI"]
     match_type = config[:match_type]
 
-    # Read all native targets from the Xcode project
+    IpcClient.send_event("Loading Targets")
     target_identifier_map = Xcodeproj::Project.open(config[:project]).native_targets.map do |target|
       bundle_id = target.build_configurations.first.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
       { name: target.name, bundle_id: bundle_id }
     end
 
+    IpcClient.send_event("Got Apple Developer account")
     api_key = app_store_connect_api_key(
       key_id: config[:key_id],
       issuer_id: config[:issuer_id],
@@ -36,6 +37,7 @@ platform :ios do
       in_house: config[:in_house]
     )
 
+    IpcClient.send_event("Matching certificates")
     match(
       type: match_type,
       app_identifier: target_identifier_map.map { |t| t[:bundle_id] },

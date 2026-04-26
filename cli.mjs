@@ -3,6 +3,7 @@
 import pc from "picocolors";
 import { Command } from "commander";
 import { loadDeployEnv } from "./scripts/load_deploy_env.mjs";
+import { clearBuilds } from "./scripts/clear_builds.mjs";
 import { runCommand } from "./scripts/run.mjs";
 
 const program = new Command();
@@ -11,16 +12,32 @@ program
   .name("actions")
   .description("Install Fastlane gems and run bundle exec fastlane")
   .option("-p, --production", "use _PROD env vars")
+  .option("--clean", "clean build directories before running fastlane")
   .argument("[fastlaneArgs...]", "arguments passed to fastlane, e.g. ios adhoc")
   .action(async (args, options) => {
+    const isAndroid = args.includes("android");
+
     try {
+      loadDeployEnv();
+      if (options.clean) await clearBuilds(isAndroid ? 'android' : 'ios');
       await runCommand(args, options);
     } catch (e) {
       program.error(e.message);
     }
   });
 
-loadDeployEnv();
+program
+  .command("clean")
+  .description("Clear build directories")
+  .option("--platform <type>", "clean build directories for <type>, android/ios/all", "all")
+  .action(async (options) => {
+    try {
+      await clearBuilds(options.platform);
+    } catch (e) {
+      program.error(e.message);
+    }
+  });
+
 program.parse();
 
 process.on("exit", (code) => {

@@ -56,7 +56,10 @@ export function getWorkspaceEnv(options = {}) {
     CALLER_WORKSPACE: callerWorkspace,
     FASTLANE_DIR: fastlaneDir,
     NO_LOGS: process.env.NO_LOGS !== 'false',
-    KEEP_OUTPUTS: process.env.KEEP_OUTPUTS === 'true'
+    KEEP_OUTPUTS: process.env.KEEP_OUTPUTS === 'true',
+
+    // Flags for build steps
+    USE_FRAMEWORKS: process.env.USE_FRAMEWORKS || "static",
   };
 
   envCache.set(cacheKey, env);

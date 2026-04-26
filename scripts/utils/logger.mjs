@@ -6,16 +6,18 @@ export function animateDots(text) {
 
   const interval = setInterval(() => {
     index = (index + 1) % pattern.length;
-    process.stdout.write(`\r\x1b[K${pc.bold(pc.yellow(text + '.'.repeat(pattern[index])))}`);
-  }, 200);
-
-  process.stdout.write(`\r\x1b[K${pc.bold(pc.yellow(text))}`);
+    const timeString = new Date().toTimeString().split(' ')[0];
+    process.stdout.write(`\r\x1b[K${pc.dim(pc.gray(`(${timeString})`))} ${pc.bold(pc.yellow(text + '.'.repeat(pattern[index])))}`);
+  }, 1000 / 6);
+  const timeString = new Date().toTimeString().split(' ')[0];
+  process.stdout.write(`\r\x1b[K${pc.dim(pc.gray(`(${timeString})`))} ${pc.bold(pc.yellow(text))}`);
 
   return (finished = true) => {
     clearInterval(interval);
     process.stdout.write('\r\x1b[K');
     if (!finished) {
-      process.stdout.write(`\r\x1b[K${pc.bold(pc.yellow(text) + pc.red(' (INTERRUPTED)'))}\n`);
+      const timeString = new Date().toTimeString().split(' ')[0];
+      process.stdout.write(`\r\x1b[K${pc.dim(pc.gray(`(${timeString})`))} ${pc.bold(pc.yellow(text) + pc.red(' (INTERRUPTED)'))}\n`);
     }
   };
 }

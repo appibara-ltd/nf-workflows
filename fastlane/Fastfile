@@ -21,6 +21,26 @@ end
 platform :ios do
   desc "Push a new build to TestFlight"
 
+  before_all do |lane|
+    Dir.chdir(ENV['CALLER_WORKSPACE']) do
+      if system("npm ls > /dev/null 2>&1")
+        IpcClient.send_event("Node modules are up to date")
+      else
+        IpcClient.send_event("Installing node modules")
+        sh("npm ci")
+      end
+    end
+
+    Dir.chdir(File.join(ENV['CALLER_WORKSPACE'], "ios")) do
+      if system("cmp -s Podfile.lock Pods/Manifest.lock")
+        IpcClient.send_event("Pods are up to date")
+      else
+        IpcClient.send_event("Installing pods")
+        sh("bundle exec pod install")
+      end
+    end
+  end
+
   after_all do |lane|
     cleanup
   end
@@ -293,6 +313,18 @@ end
 
 platform :android do
   desc "Push a new build to Firebase App Distribution"
+
+  before_all do |lane|
+    Dir.chdir(ENV['CALLER_WORKSPACE']) do
+      # "npm ls" başarılıysa (0 dönerse) sistem zaten güncel demektir.
+      if system("npm ls > /dev/null 2>&1")
+        IpcClient.send_event("Node modules are up to date")
+      else
+        IpcClient.send_event("Installing node modules")
+        sh("npm ci")
+      end
+    end
+  end
 
   after_all do |lane|
     cleanup
