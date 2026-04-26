@@ -21,11 +21,6 @@ platform :ios do
     clear_derived_data if ENV["CI"]
     match_type = config[:match_type]
 
-    FileHelper.decode_base64_to_file(
-      config[:firebase_credentials_base64],
-      config[:firebase_credentials_path]
-    )
-
     # Read all native targets from the Xcode project
     target_identifier_map = Xcodeproj::Project.open(config[:project]).native_targets.map do |target|
       bundle_id = target.build_configurations.first.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
@@ -82,19 +77,6 @@ platform :android do
     next $setup_android_result unless $setup_android_result.nil?
 
     config = ConfigHelper.platform_config(platform: :android, export_method: options[:export_method], is_ci: is_ci)
-
-    FileHelper.decode_base64_to_file(
-      config[:firebase_credentials_base64],
-      config[:firebase_credentials_path]
-    )
-    FileHelper.decode_base64_to_file(
-      config[:key_store_base64],
-      config[:key_store_path]
-    )
-    FileHelper.decode_base64_to_file(
-      config[:play_store_credentials_base64],
-      config[:play_store_credentials_path]
-    )
 
     $setup_android_result = {
       config: config

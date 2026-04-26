@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "file_helper"
+
 module ConfigHelper
   MATCH_TYPE_MAP = {
     "ad-hoc" => "adhoc",
@@ -80,12 +82,21 @@ module ConfigHelper
     slack_mentions                  = optional_env("SLACK_MENTIONS", default: "")
     firebase_credentials_base64     = optional_env("FIREBASE_CREDENTIALS", default: nil)
     firebase_tester_group           = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
+    build_environment               = optional_env("BUILD_ENVIRONMENT", default: "development") == 'production' ? 'Prod' : 'Dev'
     output_path                     = "lane_outputs"
     derived_data_path               = "derived_data"
+    firebase_credentials_path       = "#{root_dir_name}/firebase_credentials.json"
+    key_store_path                  = "#{root_dir_name}/key.keystore"
+    play_store_credentials_path     = "#{root_dir_name}/play_store_credentials.json"
+
+    FileHelper.decode_base64_to_file(
+      firebase_credentials_base64,
+      firebase_credentials_path
+    )
 
     {
       app_configuration: "Release",
-      build_environment: optional_env("BUILD_ENVIRONMENT", default: "development") == 'production' ? 'Prod' : 'Dev',
+      build_environment: build_environment,
       slack_url: slack_url,
       slack_mentions: slack_mentions,
       app_identifier: app_identifier,
@@ -94,7 +105,14 @@ module ConfigHelper
       firebase_tester_group: firebase_tester_group,
       output_path: output_path,
       derived_data_path: derived_data_path,
-      firebase_credentials_path: "#{root_dir_name}/firebase_credentials.json",
+      firebase_credentials_path: firebase_credentials_path,
+      key_store_path: key_store_path,
+      play_store_credentials_path: play_store_credentials_path,
+      cleanup_paths: [
+        firebase_credentials_path,
+        key_store_path,
+        play_store_credentials_path
+      ]
     }
   end
 
@@ -102,14 +120,6 @@ module ConfigHelper
     platform                        = :ios
     commons                         = common_config()
     root_dir_name                   = commons[:root_dir_name]
-    app_identifier                  = commons[:app_identifier]
-    firebase_tester_group           = commons[:firebase_tester_group]
-    firebase_credentials_base64     = commons[:firebase_credentials_base64]
-    output_path                     = commons[:output_path]
-    derived_data_path               = commons[:derived_data_path]
-    firebase_credentials_path       = commons[:firebase_credentials_path]
-    slack_url                       = commons[:slack_url]
-    slack_mentions                  = commons[:slack_mentions]
 
     workspace_name                  = optional_env("WORKSPACE_NAME", default: find_ios_project_name("#{root_dir_name}/ios"))
     scheme                          = optional_env("SCHEME", default: find_ios_scheme("#{root_dir_name}/ios", workspace_name))
@@ -131,7 +141,7 @@ module ConfigHelper
     send_changelog_to_testflight    = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
 
     {
-      build_environment: commons[:build_environment],
+      **commons,
       configuration: commons[:app_configuration],
       export_method: export_method,
       platform: platform,
@@ -140,20 +150,17 @@ module ConfigHelper
       workspace_name: workspace_name,
       workspace: "#{root_dir_name}/ios/#{workspace_name}.xcworkspace",
       project: "#{root_dir_name}/ios/#{workspace_name}.xcodeproj",
-      lane_output_directory: "#{root_dir_name}/#{output_path}/#{platform}",
-      xcarchive_path: "#{root_dir_name}/#{output_path}/#{platform}/archive/Archive.xcarchive",
-      ipa_output_directory: "#{root_dir_name}/#{output_path}/#{platform}/output/",
-      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/app.zip",
-      derived_data_path: "#{root_dir_name}/#{derived_data_path}",
+      lane_output_directory: "#{root_dir_name}/#{commons[:output_path]}/#{platform}",
+      xcarchive_path: "#{root_dir_name}/#{commons[:output_path]}/#{platform}/archive/Archive.xcarchive",
+      ipa_output_directory: "#{root_dir_name}/#{commons[:output_path]}/#{platform}/output/",
+      zip_asset_path: "#{root_dir_name}/#{commons[:output_path]}/tmp/#{platform}/app.zip",
+      derived_data_path: "#{root_dir_name}/#{commons[:derived_data_path]}",
       scheme: scheme,
       team_id: team_id,
       itc_team_id: itc_team_id,
-      app_identifier: app_identifier,
       key_base64: key_base64,
       key_id: key_id,
       issuer_id: issuer_id,
-      slack_url: slack_url,
-      slack_mentions: slack_mentions,
       match_git_url: match_git_url,
       match_username: match_username,
       match_readonly: match_readonly,
@@ -161,11 +168,8 @@ module ConfigHelper
       match_git_branch: match_git_branch,
       match_git_private_key_base64: match_git_private_key_base64,
       firebase_app_id: firebase_app_id,
-      firebase_tester_group: firebase_tester_group,
-      firebase_credentials_base64: firebase_credentials_base64,
-      firebase_credentials_path: firebase_credentials_path,
       silent: silent,
-      send_changelog_to_testflight: send_changelog_to_testflight
+      send_changelog_to_testflight: send_changelog_to_testflight,
     }
   end
 
@@ -173,13 +177,6 @@ module ConfigHelper
     platform                        = :android
     commons                         = common_config()
     root_dir_name                   = commons[:root_dir_name]
-    app_identifier                  = commons[:app_identifier]
-    firebase_tester_group           = commons[:firebase_tester_group]
-    firebase_credentials_base64     = commons[:firebase_credentials_base64]
-    output_path                     = commons[:output_path]
-    firebase_credentials_path       = commons[:firebase_credentials_path]
-    slack_url                       = commons[:slack_url]
-    slack_mentions                  = commons[:slack_mentions]
 
     key_store_base64                = require_env("ANDROID_KEYSTORE")
     key_store_password              = require_env("ANDROID_KEYSTORE_PASSWORD")
@@ -190,11 +187,17 @@ module ConfigHelper
     play_store_track                = optional_env("PLAY_STORE_TRACK", default: "internal")
     play_store_release_status       = optional_env("PLAY_STORE_RELEASE_STATUS", default: "draft")
 
+    FileHelper.decode_base64_to_file(
+      key_store_base64,
+      commons[:key_store_path]
+    )
+    FileHelper.decode_base64_to_file(
+      play_store_credentials_base64,
+      commons[:play_store_credentials_path]
+    )
+
     {
-      build_environment: commons[:build_environment],
-      slack_url: slack_url,
-      slack_mentions: slack_mentions,
-      app_identifier: app_identifier,
+      **commons,
       export_method: export_method,
       platform: platform,
       task: export_method == "apk" ? "assemble" : "bundle",
@@ -203,19 +206,14 @@ module ConfigHelper
       gradle_path: "#{root_dir_name}/android/gradlew",
       app_gradle_file_path: "#{root_dir_name}/android/app/build.gradle",
       key_store_base64: key_store_base64,
-      key_store_path: "#{root_dir_name}/key.keystore",
       key_store_password: key_store_password,
       key_alias: key_alias,
       key_password: key_password,
       firebase_app_id: firebase_app_id,
-      firebase_tester_group: firebase_tester_group,
-      firebase_credentials_base64: firebase_credentials_base64,
-      firebase_credentials_path: firebase_credentials_path,
       play_store_credentials_base64: play_store_credentials_base64,
-      play_store_credentials_path: "#{root_dir_name}/play_store_credentials.json",
       play_store_track: play_store_track,
       play_store_release_status: play_store_release_status,
-      zip_asset_path: "#{root_dir_name}/#{output_path}/tmp/#{platform}/app.zip",
+      zip_asset_path: "#{root_dir_name}/#{commons[:output_path]}/tmp/#{platform}/app.zip",
     }
   end
 

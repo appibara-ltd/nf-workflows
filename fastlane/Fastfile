@@ -20,6 +20,10 @@ end
 platform :ios do
   desc "Push a new build to TestFlight"
 
+  after_all do |lane|
+    cleanup
+  end
+
   lane :internal do
     result        = setup(export_method: "app-store")
     config        = result[:config]
@@ -258,6 +262,10 @@ end
 
 platform :android do
   desc "Push a new build to Firebase App Distribution"
+
+  after_all do |lane|
+    cleanup
+  end
 
   lane :internal do |options|
     result        = setup(export_method: options[:export_method] || "aab")
