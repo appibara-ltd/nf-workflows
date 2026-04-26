@@ -60,7 +60,7 @@ platform :ios do
       input_dir_path: config[:lane_output_directory],
       output_path: config[:zip_asset_path]
     )
-    IpcClient.send_event("Created ZIP", { path: config[:zip_asset_path] })
+
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes(
@@ -136,7 +136,6 @@ platform :ios do
       input_dir_path: config[:lane_output_directory],
       output_path: config[:zip_asset_path]
     )
-    IpcClient.send_event("Created ZIP", { path: config[:zip_asset_path] })
 
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
@@ -347,7 +346,6 @@ platform :android do
       input_dir_path: config[:export_method] == "apk" ? File.dirname(apk_path) : File.dirname(aab_path),
       output_path: config[:zip_asset_path]
     )
-    IpcClient.send_event("Created Zip file", { path: config[:zip_asset_path] })
     
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
@@ -438,7 +436,7 @@ platform :android do
       input_dir_path: config[:export_method] == "apk" ? File.dirname(apk_path) : File.dirname(aab_path),
       output_path: config[:zip_asset_path]
     )
-    IpcClient.send_event("Created Zip file", { path: config[:zip_asset_path] })
+
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes(
