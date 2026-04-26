@@ -76,6 +76,8 @@ module ConfigHelper
   end
 
   def self.common_config()
+    return @_common_config if @_common_config
+
     app_identifier                  = require_env("APP_IDENTIFIER")
     root_dir_name                   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
     slack_url                       = optional_env("SLACK_URL", default: nil)
@@ -94,7 +96,7 @@ module ConfigHelper
       firebase_credentials_path
     )
 
-    {
+    @_common_config = {
       app_configuration: "Release",
       build_environment: build_environment,
       slack_url: slack_url,
@@ -114,6 +116,7 @@ module ConfigHelper
         play_store_credentials_path
       ]
     }
+    @_common_config
   end
 
   def self.ios_config(export_method: "app-store", is_ci: true)
@@ -218,13 +221,17 @@ module ConfigHelper
   end
 
   def self.platform_config(platform: :ios, export_method: "app-store", is_ci: true)
+    return @_platform_config if @_platform_config
+
     case platform
     when :ios
-      ios_config(export_method: export_method, is_ci: is_ci)
+      @_platform_config = ios_config(export_method: export_method, is_ci: is_ci)
     when :android
-      android_config(export_method: export_method, is_ci: is_ci)
+      @_platform_config = android_config(export_method: export_method, is_ci: is_ci)
     else
       Fastlane::UI.user_error!("Unsupported platform: #{platform}")
     end
+
+    @_platform_config
   end
 end
