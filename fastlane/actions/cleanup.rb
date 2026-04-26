@@ -8,8 +8,16 @@ module Fastlane
       def self.run(params)
         commons = ConfigHelper.common_config()
 
+        output_path_to_delete = "#{commons[:root_dir_name]}/#{commons[:output_path]}"
         paths_to_delete = commons[:cleanup_paths]
         deleted_files = []
+
+        if Dir.exist?(output_path_to_delete) && !commons[:keep_outputs]
+          UI.message("🗑️  Deleting output directory: #{output_path_to_delete}...")
+          FileUtils.rm_rf(output_path_to_delete)
+          deleted_files << output_path_to_delete
+        end
+
 
         paths_to_delete.each do |path|
           if File.exist?(path)
@@ -20,7 +28,7 @@ module Fastlane
         end
         
         if deleted_files.any?
-          UI.success("✅  Cleanup completed. #{deleted_files.size}/#{paths_to_delete.size} base64 generated file(s) removed.")
+          UI.success("✅  Cleanup completed. #{deleted_files.size} base64 generated file(s) removed.")
         else
           UI.message("✅  Cleanup completed. No base64 generated files found to remove.")
         end

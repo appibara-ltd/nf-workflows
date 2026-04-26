@@ -6,6 +6,7 @@ import "SetupFastfile"
 require_relative "utils/config_helper"
 require_relative "utils/file_helper"
 require_relative "utils/github_helper"
+require_relative "utils/ipc_client"
 
 DEFAULT_EXPORT_METHOD   = "app-store"
 XCODEBUILD_FORMATTER    = 'xcbeautify --renderer github-actions'
@@ -42,26 +43,34 @@ platform :ios do
       build_number: build_number
     )
 
+    app_target   = result[:targets].find { |t| t[:bundle_id] == config[:app_identifier] }
+    version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
+    IpcClient.send_event("Building: v#{version}(#{build_number})")
+
     archive_result = create_archive(export_method: config[:export_method])
+    IpcClient.send_event("Created Archive")
 
     ipa_result = create_ipa(
       export_method: config[:export_method],
       archive_path: archive_result[:archive_path]
     )
+    IpcClient.send_event("Created IPA")
 
     FileHelper.zip_folder(
       input_dir_path: config[:lane_output_directory],
       output_path: config[:zip_asset_path]
     )
+    IpcClient.send_event("Created ZIP", { path: config[:zip_asset_path] })
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes(
-      cliff: false,
+      cliff: config[:cliff],
       platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       build_environment: config[:build_environment]
     )
+    IpcClient.send_event("Created release notes", { notes: release_notes })
     github_release = GithubHelper.create_release(
       platform: :ios,
       build_environment: config[:build_environment],
@@ -70,6 +79,7 @@ platform :ios do
       release_notes: release_notes,
       upload_assets: [config[:zip_asset_path]]
     )
+    IpcClient.send_event("Created Github Release", { url: github_release["html_url"] })
 
     testflight_params = {
       ipa: ipa_result[:path],
@@ -84,12 +94,13 @@ platform :ios do
     }
 
     if config[:send_changelog_to_testflight]
-      testflight_params[:changelog] = "#{release_notes}\nGithub Release(#{github_release[:id]}): #{github_release[:url]}"
+      testflight_params[:changelog] = "#{release_notes}\nGithub Release(#{github_release["id"]}): #{github_release["html_url"]}"
     end
 
     upload_to_testflight(testflight_params)
+    IpcClient.send_event("Uploaded to Testflight")
 
-    clean_build_artifacts
+    clean_build_artifacts if ENV["CI"]
   end
 
   lane :adhoc do
@@ -108,26 +119,36 @@ platform :ios do
       build_number: build_number
     )
 
+    app_target   = result[:targets].find { |t| t[:bundle_id] == config[:app_identifier] }
+    version      = get_version_number(xcodeproj: config[:project], target: app_target[:name])
+    IpcClient.send_event("Building: v#{version}(#{build_number})")
+
     archive_result = create_archive(export_method: config[:export_method])
+    IpcClient.send_event("Created Archive")
 
     ipa_result = create_ipa(
       export_method: config[:export_method],
       archive_path: archive_result[:archive_path]
     )
+    IpcClient.send_event("Created IPA")
 
     FileHelper.zip_folder(
       input_dir_path: config[:lane_output_directory],
       output_path: config[:zip_asset_path]
     )
+    IpcClient.send_event("Created ZIP", { path: config[:zip_asset_path] })
+
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
     release_notes = GithubHelper.release_notes(
-      cliff: false,
+      cliff: config[:cliff],
       platform: :ios,
       version: ipa_result[:version],
       build_number: ipa_result[:build_number],
       build_environment: config[:build_environment]
     )
+    IpcClient.send_event("Created release notes", { notes: release_notes })
+
     github_release = GithubHelper.create_release(
       platform: :ios,
       build_environment: config[:build_environment],
@@ -136,14 +157,25 @@ platform :ios do
       release_notes: release_notes,
       upload_assets: [config[:zip_asset_path]]
     )
+    IpcClient.send_event("Created Github Release", { url: github_release["html_url"] })
+
     release_notes_with_github = "#{release_notes.empty? ? '' : "#{release_notes}\n"}#{github_release.nil? ? '' : "Github Release(#{github_release["id"]}): #{github_release["html_url"]}"}"
-    firebase_app_distribution(
+    release = firebase_app_distribution(
       app: config[:firebase_app_id],
       service_credentials_file: config[:firebase_credentials_path],
       groups: config[:firebase_tester_group],
       release_notes: release_notes_with_github,
       ipa_path: ipa_result[:path]
     )
+    IpcClient.send_event("Uploaded to Firebase App Distribution:", {
+      download: release[:binaryDownloadUri],
+      console: release[:firebaseConsoleUri],
+      testing: release[:testingUri],
+      createdAt: release[:createTime],
+      updatedAt: release[:updateTime],
+      expireAt: release[:expireTime],
+      version: "#{release[:displayVersion]}(#{release[:buildVersion]})"
+    })
 
     clean_build_artifacts if ENV["CI"]
   end
@@ -171,7 +203,7 @@ platform :ios do
         code_sign_identity: target[:cert_name]
       )
     end
-
+    
     # Archive
     build_app(
       workspace: config[:workspace],
@@ -270,6 +302,7 @@ platform :android do
   lane :internal do |options|
     result        = setup(export_method: options[:export_method] || "aab")
     config        = result[:config]
+    version_name  = android_get_version_name(gradle_file: config[:app_gradle_file_path])
 
     version_codes = google_play_track_version_codes(
       package_name: config[:app_identifier],
@@ -284,6 +317,7 @@ platform :android do
       version_code: new_build_number,
       gradle_file: config[:app_gradle_file_path]
     )
+    IpcClient.send_event("Building: v#{version_name}(#{new_build_number})")
 
     gradle(
       task: config[:task],
@@ -304,6 +338,7 @@ platform :android do
         "org.gradle.jvmargs" => "-Xmx8192m -XX:MaxMetaspaceSize=4096m",
       }
     )
+    IpcClient.send_event("Created #{config[:export_method].upcase} file")
 
     apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
     aab_path = lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
@@ -312,18 +347,21 @@ platform :android do
       input_dir_path: config[:export_method] == "apk" ? File.dirname(apk_path) : File.dirname(aab_path),
       output_path: config[:zip_asset_path]
     )
+    IpcClient.send_event("Created Zip file", { path: config[:zip_asset_path] })
+    
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
+    
     release_notes = GithubHelper.release_notes(
-      cliff: false,
+      cliff: config[:cliff],
       platform: :android,
       version: version_name,
       build_number: new_build_number,
       build_environment: config[:build_environment]
     )
+    IpcClient.send_event("Created release notes", { notes: release_notes })
 
-    GithubHelper.create_release(
+    github_release = GithubHelper.create_release(
       build_environment: config[:build_environment],
       platform: :android,
       version: version_name,
@@ -331,6 +369,7 @@ platform :android do
       release_notes: release_notes,
       upload_assets: [config[:zip_asset_path]]
     )
+    IpcClient.send_event("Created Github Release", { url: github_release["html_url"] })
 
     play_store_params = {
       package_name: config[:app_identifier],
@@ -341,28 +380,35 @@ platform :android do
 
     if config[:export_method] == "apk"
       play_store_params[:apk] = apk_path
+      play_store_params[:skip_upload_aab] = true
     else
       play_store_params[:aab] = aab_path
+      play_store_params[:skip_upload_apk] = true
     end
-
+    puts "play_store_params #{play_store_params}"
     upload_to_play_store(play_store_params)
+    IpcClient.send_event("Uploaded to Play Store")
   end
 
   lane :adhoc do |options|
     result        = setup(export_method: options[:export_method] || "apk")
     config        = result[:config]
 
+    version_name  = android_get_version_name(gradle_file: config[:app_gradle_file_path])
+    
     latest_release = firebase_app_distribution_get_latest_release(
       app: config[:firebase_app_id],
       service_credentials_file: config[:firebase_credentials_path]
     )
-
+      
     new_build_number = (latest_release&.[](:buildVersion).to_i || 0) + 1
-
+    
     android_set_version_code(
       version_code: new_build_number,
       gradle_file: config[:app_gradle_file_path]
     )
+
+    IpcClient.send_event("Building: v#{version_name}(#{new_build_number})")
 
     gradle(
       task: config[:task],
@@ -383,6 +429,8 @@ platform :android do
       }
     )
 
+    IpcClient.send_event("Created #{config[:export_method].upcase} file")
+
     apk_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
     aab_path = lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
 
@@ -390,17 +438,17 @@ platform :android do
       input_dir_path: config[:export_method] == "apk" ? File.dirname(apk_path) : File.dirname(aab_path),
       output_path: config[:zip_asset_path]
     )
+    IpcClient.send_event("Created Zip file", { path: config[:zip_asset_path] })
     File.open(ENV['GITHUB_ENV'], 'a') { |f| f.puts("RELEASE_ASSET_PATH=#{config[:zip_asset_path]}") } if ENV['GITHUB_ENV']
 
-    version_name = android_get_version_name(gradle_file: config[:app_gradle_file_path])
-
     release_notes = GithubHelper.release_notes(
-      cliff: false,
+      cliff: config[:cliff],
       platform: :android,
       version: version_name,
       build_number: new_build_number,
       build_environment: config[:build_environment]
     )
+    IpcClient.send_event("Created release notes", { notes: release_notes })
 
     github_release = GithubHelper.create_release(
       build_environment: config[:build_environment],
@@ -410,6 +458,7 @@ platform :android do
       release_notes: release_notes,
       upload_assets: [config[:zip_asset_path]]
     )
+    IpcClient.send_event("Created Github Release", { url: github_release["html_url"] })
 
     release_notes_with_github = "#{release_notes.empty? ? '' : "#{release_notes}\n"}#{github_release.nil? ? '' : "Github Release(#{github_release["id"]}): #{github_release["html_url"]}"}"
 
@@ -428,7 +477,16 @@ platform :android do
       firebase_app_distribution_params[:android_artifact_path] = aab_path
     end
 
-    firebase_app_distribution(firebase_app_distribution_params)
+    release = firebase_app_distribution(firebase_app_distribution_params)
+    IpcClient.send_event("Uploaded to Firebase App Distribution:", {
+      download: release[:binaryDownloadUri],
+      console: release[:firebaseConsoleUri],
+      testing: release[:testingUri],
+      createdAt: release[:createTime],
+      updatedAt: release[:updateTime],
+      expireAt: release[:expireTime],
+      version: "#{release[:displayVersion]}(#{release[:buildVersion]})"
+    })
   end
 end
 

@@ -19,7 +19,6 @@ module ConfigHelper
     
     # Treat empty strings as missing and return default
     if result.nil? || (result.is_a?(String) && result.strip.empty?)
-      Fastlane::UI.message("#{key} is missing!") if default.nil?
       return default
     end
     
@@ -85,6 +84,7 @@ module ConfigHelper
     firebase_credentials_base64     = optional_env("FIREBASE_CREDENTIALS", default: nil)
     firebase_tester_group           = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
     build_environment               = optional_env("BUILD_ENVIRONMENT", default: "development") == 'production' ? 'Prod' : 'Dev'
+    keep_outputs                    = optional_env("KEEP_OUTPUTS", default: false)
     output_path                     = "lane_outputs"
     derived_data_path               = "derived_data"
     firebase_credentials_path       = "#{root_dir_name}/firebase_credentials.json"
@@ -97,6 +97,7 @@ module ConfigHelper
     )
 
     @_common_config = {
+      cliff: true,
       app_configuration: "Release",
       build_environment: build_environment,
       slack_url: slack_url,
@@ -110,6 +111,7 @@ module ConfigHelper
       firebase_credentials_path: firebase_credentials_path,
       key_store_path: key_store_path,
       play_store_credentials_path: play_store_credentials_path,
+      keep_outputs: keep_outputs,
       cleanup_paths: [
         firebase_credentials_path,
         key_store_path,
@@ -140,7 +142,7 @@ module ConfigHelper
     match_git_private_key_base64    = require_env("MATCH_REPO_PRIVATE_KEY")
 
     firebase_app_id                 = require_env("FIREBASE_IOS_APP_ID")
-    silent                          = optional_env("SILENT", default: false)
+    silent                          = optional_env("SILENT", default: true)
     send_changelog_to_testflight    = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
 
     {

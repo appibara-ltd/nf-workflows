@@ -5,6 +5,7 @@ opt_out_usage
 require_relative "utils/config_helper"
 require_relative "utils/file_helper"
 require_relative "utils/github_helper"
+require_relative "utils/ipc_client"
 
 default_platform(:ios)
 $setup_ios_result = nil
@@ -61,6 +62,8 @@ platform :ios do
       }
     end
 
+    IpcClient.send_event("Setup Completed")
+
     $setup_ios_result = {
       config: config,
       api_key: api_key,
@@ -77,6 +80,8 @@ platform :android do
     next $setup_android_result unless $setup_android_result.nil?
 
     config = ConfigHelper.platform_config(platform: :android, export_method: options[:export_method], is_ci: is_ci)
+
+    IpcClient.send_event("Setup Completed")
 
     $setup_android_result = {
       config: config
