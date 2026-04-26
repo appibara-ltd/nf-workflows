@@ -26,7 +26,9 @@ module GithubHelper
     if cliff
       tag_name = "#{platform == :ios ? '🍏' : '🤖'}-v#{version}_#{build_number}_#{build_environment.downcase}"
       Fastlane::Actions.sh("cd #{ENV['GITHUB_WORKSPACE']} && RUST_LOG=error git cliff --tag=#{tag_name} --unreleased -o #{ENV['GITHUB_WORKSPACE']}/release_notes.md")
-      return File.read("#{ENV['GITHUB_WORKSPACE']}/release_notes.md")
+      notes = File.read("#{ENV['GITHUB_WORKSPACE']}/release_notes.md")
+      # IpcClient.send_event("Created release notes", { notes: notes })
+      return notes
     else
       params = {
         state: "closed",
@@ -38,7 +40,9 @@ module GithubHelper
 
       data = github_get("/repos/#{current_repo}/pulls", params)
 
-      data.map { |pr| "\n#{pr['title']} - ##{pr['number']} - @#{pr['user']['login']}" }.join
+      notes = data.map { |pr| "\n#{pr['title']} - ##{pr['number']} - @#{pr['user']['login']}" }.join
+      # IpcClient.send_event("Created release notes", { notes: notes })
+      return notes
     end
   end
 

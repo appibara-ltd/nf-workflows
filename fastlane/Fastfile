@@ -90,7 +90,7 @@ platform :ios do
       build_number: ipa_result[:build_number],
       build_environment: config[:build_environment]
     )
-    IpcClient.send_event("Created release notes", { notes: release_notes })
+
     github_release = GithubHelper.create_release(
       platform: :ios,
       build_environment: config[:build_environment],
@@ -166,7 +166,7 @@ platform :ios do
       build_number: ipa_result[:build_number],
       build_environment: config[:build_environment]
     )
-    IpcClient.send_event("Created release notes", { notes: release_notes })
+
 
     github_release = GithubHelper.create_release(
       platform: :ios,
@@ -389,7 +389,7 @@ platform :android do
       build_number: new_build_number,
       build_environment: config[:build_environment]
     )
-    IpcClient.send_event("Created release notes", { notes: release_notes })
+
 
     github_release = GithubHelper.create_release(
       build_environment: config[:build_environment],
@@ -478,7 +478,7 @@ platform :android do
       build_number: new_build_number,
       build_environment: config[:build_environment]
     )
-    IpcClient.send_event("Created release notes", { notes: release_notes })
+
 
     github_release = GithubHelper.create_release(
       build_environment: config[:build_environment],
