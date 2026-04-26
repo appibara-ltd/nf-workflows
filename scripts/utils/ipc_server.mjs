@@ -14,7 +14,7 @@ const defaultMessageLogger = (msg, group = 'Fastlane') => {
     if (msg.payload && Object.keys(msg.payload).length > 0) {
       for (const [key, value] of Object.entries(msg.payload)) {
         const valStr = typeof value === 'object' ? JSON.stringify(value) : value;
-        console.log(`${" ".repeat(16)}${pc.dim((key).padEnd(20, " ") + ":")} ${valStr}`);
+        console.log(`${" ".repeat(16)}${pc.dim((key).padEnd(10, " ") + ":")} ${valStr}`);
       }
     }
   }
