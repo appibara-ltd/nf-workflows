@@ -31,18 +31,28 @@ platform :ios do
       end
     end
 
-    Dir.chdir(File.join(ENV['CALLER_WORKSPACE'], "ios")) do
-      if system("cmp -s Podfile.lock Pods/Manifest.lock")
-        IpcClient.send_event("Pods are up to date")
-      else
-        IpcClient.send_event("Installing pods")
-        sh("bundle exec pod install")
+    if lane != :pod
+      Dir.chdir(File.join(ENV['CALLER_WORKSPACE'], "ios")) do
+        if system("cmp -s Podfile.lock Pods/Manifest.lock")
+          IpcClient.send_event("Pods are up to date")
+        else
+          IpcClient.send_event("Installing pods")
+          sh("bundle exec pod install")
+        end
       end
     end
   end
 
   after_all do |lane|
     cleanup
+  end
+
+  lane :pod do |options|
+    Dir.chdir(File.join(ENV['CALLER_WORKSPACE'], "ios")) do
+      update = options[:update] || false
+      IpcClient.send_event("Installing pods#{update ? ' with repo-update' : ''}")
+      sh("bundle exec pod install #{update ? '--repo-update' : ''}")
+    end
   end
 
   lane :internal do
