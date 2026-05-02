@@ -83,7 +83,8 @@ module ConfigHelper
     slack_mentions                  = optional_env("SLACK_MENTIONS", default: "")
     firebase_credentials_base64     = optional_env("FIREBASE_CREDENTIALS", default: nil)
     firebase_tester_group           = optional_env("FIREBASE_TESTER_GROUP", default: "internal")
-    build_environment               = optional_env("BUILD_ENVIRONMENT", default: "development") == 'production' ? 'Prod' : 'Dev'
+    build_environment               = optional_env("BUILD_ENVIRONMENT", default: "production") == 'production' ? 'Prod' : 'Dev'
+    build_configuration             = optional_env("BUILD_CONFIGURATION", default: "Release")
     keep_outputs                    = optional_env("KEEP_OUTPUTS", default: false)
     output_path                     = "lane_outputs"
     derived_data_path               = "derived_data"
@@ -98,7 +99,7 @@ module ConfigHelper
 
     @_common_config = {
       cliff: true,
-      app_configuration: "Release",
+      app_configuration: build_configuration,
       build_environment: build_environment,
       slack_url: slack_url,
       slack_mentions: slack_mentions,
