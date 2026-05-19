@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { loadDeployEnv } from "./scripts/load_deploy_env.mjs";
 import { clearBuilds } from "./scripts/clear_builds.mjs";
 import { runCommand } from "./scripts/run.mjs";
+import { setSecrets } from "./scripts/set_secrets.mjs";
 
 const program = new Command();
 
@@ -33,6 +34,17 @@ program
   .action(async (options) => {
     try {
       await clearBuilds(options.platform);
+    } catch (e) {
+      program.error(e.message);
+    }
+  });
+
+program
+  .command("set-secrets")
+  .description("Write secrets from .env.deploy in pwd to the GitHub repository secrets")
+  .action(async () => {
+    try {
+      await setSecrets();
     } catch (e) {
       program.error(e.message);
     }
