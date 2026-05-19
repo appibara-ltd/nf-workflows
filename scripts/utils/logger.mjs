@@ -1,4 +1,6 @@
 import pc from "picocolors";
+import { isCi } from "./process.mjs";
+
 
 export function animateDots(text) {
   let index = 0;
@@ -35,7 +37,7 @@ export function formatDuration(ms) {
 
 export function startLog(text, isNoLogs) {
   const startTime = performance.now();
-  const stopFn = isNoLogs ? animateDots(text) : (() => {
+  const stopFn = (isNoLogs && !isCi()) ? animateDots(text) : (() => {
     console.log(pc.bold(pc.yellow(`${text}...`)));
     return () => { };
   })();
