@@ -78,7 +78,8 @@ module ConfigHelper
     return @_common_config if @_common_config
 
     app_identifier                  = require_env("APP_IDENTIFIER")
-    root_dir_name                   = optional_env("GITHUB_WORKSPACE", default: find_project_root(File.dirname(__FILE__)))
+    root_dir_name                   = optional_env("GITHUB_WORKSPACE", default: nil)
+    root_dir_name                   ||= find_project_root(File.dirname(__FILE__))
     slack_url                       = optional_env("SLACK_URL", default: nil)
     slack_mentions                  = optional_env("SLACK_MENTIONS", default: "")
     firebase_credentials_base64     = optional_env("FIREBASE_CREDENTIALS", default: nil)
