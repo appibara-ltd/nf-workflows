@@ -15,6 +15,11 @@ export async function runFastlane(fastlaneArgs, env) {
   await run("bundle", ["exec", "fastlane", ...fastlaneArgs], env);
 }
 
+export async function runBundle(bundleArgs, options) {
+  const env = getWorkspaceEnv(options);
+  await run("bundle", bundleArgs, env);
+}
+
 async function checkBundle(env) {
   try {
     const code = await spawnProcess("bundle", ["check"], { cwd: env.FASTLANE_DIR, stdio: env.NO_LOGS ? "ignore" : "inherit", env });

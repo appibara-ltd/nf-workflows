@@ -4,7 +4,7 @@ import pc from "picocolors";
 import { Command } from "commander";
 import { loadDeployEnv } from "./scripts/load_deploy_env.mjs";
 import { clearBuilds } from "./scripts/clear_builds.mjs";
-import { runCommand } from "./scripts/run.mjs";
+import { runCommand, runBundle } from "./scripts/run.mjs";
 import { setSecrets } from "./scripts/set_secrets.mjs";
 
 const program = new Command();
@@ -34,6 +34,20 @@ program
   .action(async (options) => {
     try {
       await clearBuilds(options.platform);
+    } catch (e) {
+      program.error(e.message);
+    }
+  });
+
+program
+  .command("bundle")
+  .description("Run bundler commands directly in the fastlane environment")
+  .argument("[bundleArgs...]", "arguments passed to bundle, e.g. install")
+  .action(async (bundleArgs) => {
+    try {
+      loadDeployEnv();
+      const options = program.opts();
+      await runBundle(bundleArgs, options);
     } catch (e) {
       program.error(e.message);
     }
