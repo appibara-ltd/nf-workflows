@@ -4,8 +4,8 @@ import pc from "picocolors";
 import { IpcServer } from './utils/ipc_server.mjs';
 import { startLog } from "./utils/logger.mjs";
 
-export async function run(command, args, env) {
-  const code = await spawnProcess(command, args, { cwd: env.FASTLANE_DIR, stdio: env.NO_LOGS ? "ignore" : "inherit", env });
+export async function run(command, args, env, cwd = null) {
+  const code = await spawnProcess(command, args, { cwd: cwd ?? env.FASTLANE_DIR, stdio: env.NO_LOGS ? "ignore" : "inherit", env });
   if (code !== 0) process.exit(code);
 }
 
@@ -17,7 +17,7 @@ export async function runFastlane(fastlaneArgs, env) {
 
 export async function runBundle(bundleArgs, options) {
   const env = getWorkspaceEnv(options);
-  await run("bundle", bundleArgs, env);
+  await run("bundle", bundleArgs, env, './ios');
 }
 
 async function checkBundle(env) {
