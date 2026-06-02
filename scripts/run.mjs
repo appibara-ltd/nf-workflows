@@ -1,6 +1,7 @@
 import { getWorkspaceEnv } from "./workspace_env.mjs";
 import { spawnProcess, registerProcessSignals } from "./utils/process.mjs";
 import pc from "picocolors";
+import path from "node:path";
 import { IpcServer } from './utils/ipc_server.mjs';
 import { startLog } from "./utils/logger.mjs";
 
@@ -17,7 +18,7 @@ export async function runFastlane(fastlaneArgs, env) {
 
 export async function runBundle(bundleArgs, options) {
   const env = getWorkspaceEnv(options);
-  await run("bundle", bundleArgs, env, './ios');
+  await run("bundle", bundleArgs, env, path.resolve(env.CALLER_WORKSPACE, 'ios'));
 }
 
 async function checkBundle(env) {
