@@ -89,8 +89,8 @@ module ConfigHelper
     keep_outputs                    = optional_env("KEEP_OUTPUTS", default: false)
     output_path                     = "lane_outputs"
     private_keys_path               = "#{root_dir_name}/#{output_path}/private_keys"
-    key_filepath                    = "#{private_keys_path}/private_key.p8"
     derived_data_path               = "derived_data"
+    key_filepath                    = "#{private_keys_path}/private_key.p8"
     firebase_credentials_path       = "#{private_keys_path}/firebase_credentials.json"
     key_store_path                  = "#{private_keys_path}/key.keystore"
     play_store_credentials_path     = "#{private_keys_path}/play_store_credentials.json"
@@ -117,8 +117,12 @@ module ConfigHelper
       key_store_path: key_store_path,
       play_store_credentials_path: play_store_credentials_path,
       keep_outputs: keep_outputs,
+      private_keys_path: private_keys_path,
       cleanup_paths: [
-        private_keys_path
+        key_filepath,
+        firebase_credentials_path,
+        key_store_path,
+        play_store_credentials_path
       ]
     }
     @_common_config

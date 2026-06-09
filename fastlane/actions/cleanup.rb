@@ -18,16 +18,19 @@ module Fastlane
           deleted_files << output_path_to_delete
         end
 
-
         paths_to_delete.each do |path|
-          if File.exist?(path) || Dir.exist?(path)
-            UI.message("🗑️  Deleting generated path: #{path}...")
-            FileUtils.rm_rf(path)
+          if File.exist?(path) && !commons[:keep_outputs]
+            UI.message("🗑️  Deleting generated file: #{path}...")
+            File.delete(path)
             deleted_files << path
           end
         end
         
         if deleted_files.any?
+          private_keys_dir = commons[:private_keys_path]
+          if Dir.exist?(private_keys_dir) && Dir.empty?(private_keys_dir)
+            FileUtils.rm_rf(private_keys_dir)
+          end
           UI.success("✅  Cleanup completed. #{deleted_files.size} base64 generated file(s) removed.")
         else
           UI.message("✅  Cleanup completed. No base64 generated files found to remove.")
