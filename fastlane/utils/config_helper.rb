@@ -95,11 +95,6 @@ module ConfigHelper
     key_store_path                  = "#{private_keys_path}/key.keystore"
     play_store_credentials_path     = "#{private_keys_path}/play_store_credentials.json"
 
-    FileHelper.decode_base64_to_file(
-      firebase_credentials_base64,
-      firebase_credentials_path
-    )
-
     @_common_config = {
       cliff: true,
       app_configuration: build_configuration,

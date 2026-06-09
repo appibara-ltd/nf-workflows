@@ -142,6 +142,10 @@ platform :ios do
   lane :adhoc do
     result  = setup(export_method: "ad-hoc")
     config  = result[:config]
+    FileHelper.decode_base64_to_file(
+      config[:firebase_credentials_base64],
+      config[:firebase_credentials_path]
+    )
 
     latest_release = firebase_app_distribution_get_latest_release(
       app: config[:firebase_app_id],
@@ -424,6 +428,10 @@ platform :android do
   lane :adhoc do |options|
     result        = setup(export_method: options[:export_method] || "apk")
     config        = result[:config]
+    FileHelper.decode_base64_to_file(
+      config[:firebase_credentials_base64],
+      config[:firebase_credentials_path]
+    )
 
     version_name  = android_get_version_name(gradle_file: config[:app_gradle_file_path])
     
