@@ -18,6 +18,10 @@ before_all do |lane|
   sh(pre_script) if pre_script
 end
 
+after_all do |lane|
+  cleanup
+end
+
 platform :ios do
   desc "Push a new build to TestFlight"
 
@@ -41,10 +45,6 @@ platform :ios do
         end
       end
     end
-  end
-
-  after_all do |lane|
-    cleanup
   end
 
   lane :pod do |options|
@@ -345,10 +345,6 @@ platform :android do
         sh("npm ci")
       end
     end
-  end
-
-  after_all do |lane|
-    cleanup
   end
 
   lane :internal do |options|

@@ -119,7 +119,8 @@ module ConfigHelper
       cleanup_paths: [
         firebase_credentials_path,
         key_store_path,
-        play_store_credentials_path
+        play_store_credentials_path,
+        key_filepath
       ]
     }
     @_common_config
