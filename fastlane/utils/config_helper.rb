@@ -88,6 +88,7 @@ module ConfigHelper
     build_configuration             = optional_env("BUILD_CONFIGURATION", default: "Release")
     keep_outputs                    = optional_env("KEEP_OUTPUTS", default: false)
     output_path                     = "lane_outputs"
+    key_filepath                    = "#{root_dir_name}/#{output_path}/ios/private_key.p8"
     derived_data_path               = "derived_data"
     firebase_credentials_path       = "#{root_dir_name}/firebase_credentials.json"
     key_store_path                  = "#{root_dir_name}/key.keystore"
@@ -109,6 +110,7 @@ module ConfigHelper
       firebase_credentials_base64: firebase_credentials_base64,
       firebase_tester_group: firebase_tester_group,
       output_path: output_path,
+      key_filepath: key_filepath,
       derived_data_path: derived_data_path,
       firebase_credentials_path: firebase_credentials_path,
       key_store_path: key_store_path,
@@ -147,6 +149,11 @@ module ConfigHelper
     silent                          = optional_env("SILENT", default: true)
     send_changelog_to_testflight    = optional_env("SEND_CHANGELOG_TO_TESTFLIGHT", default: false)
 
+    FileHelper.decode_base64_to_file(
+      key_base64,
+      commons[:key_filepath]
+    )
+
     {
       **commons,
       configuration: commons[:app_configuration],
@@ -166,6 +173,7 @@ module ConfigHelper
       team_id: team_id,
       itc_team_id: itc_team_id,
       key_base64: key_base64,
+      key_filepath: commons[:key_filepath],
       key_id: key_id,
       issuer_id: issuer_id,
       match_git_url: match_git_url,
