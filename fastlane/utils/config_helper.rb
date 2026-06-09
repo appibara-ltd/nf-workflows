@@ -88,11 +88,12 @@ module ConfigHelper
     build_configuration             = optional_env("BUILD_CONFIGURATION", default: "Release")
     keep_outputs                    = optional_env("KEEP_OUTPUTS", default: false)
     output_path                     = "lane_outputs"
-    key_filepath                    = "#{root_dir_name}/#{output_path}/ios/private_key.p8"
+    private_keys_path               = "#{root_dir_name}/#{output_path}/private_keys"
+    key_filepath                    = "#{private_keys_path}/private_key.p8"
     derived_data_path               = "derived_data"
-    firebase_credentials_path       = "#{root_dir_name}/firebase_credentials.json"
-    key_store_path                  = "#{root_dir_name}/key.keystore"
-    play_store_credentials_path     = "#{root_dir_name}/play_store_credentials.json"
+    firebase_credentials_path       = "#{private_keys_path}/firebase_credentials.json"
+    key_store_path                  = "#{private_keys_path}/key.keystore"
+    play_store_credentials_path     = "#{private_keys_path}/play_store_credentials.json"
 
     FileHelper.decode_base64_to_file(
       firebase_credentials_base64,
@@ -117,10 +118,7 @@ module ConfigHelper
       play_store_credentials_path: play_store_credentials_path,
       keep_outputs: keep_outputs,
       cleanup_paths: [
-        firebase_credentials_path,
-        key_store_path,
-        play_store_credentials_path,
-        key_filepath
+        private_keys_path
       ]
     }
     @_common_config
