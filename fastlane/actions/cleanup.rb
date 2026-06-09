@@ -20,9 +20,9 @@ module Fastlane
 
 
         paths_to_delete.each do |path|
-          if File.exist?(path)
-            UI.message("🗑️  Deleting generated file: #{path}...")
-            File.delete(path)
+          if File.exist?(path) || Dir.exist?(path)
+            UI.message("🗑️  Deleting generated path: #{path}...")
+            FileUtils.rm_rf(path)
             deleted_files << path
           end
         end
